@@ -1,0 +1,48 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "MongrelDB Viewer",
+  "version": "1.0.2",
+  "identifier": "com.visorcraft.mongreldb-viewer",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "MongrelDB Viewer",
+        "width": 1440,
+        "height": 1000,
+        "minWidth": 1100,
+        "minHeight": 700,
+        "resizable": true,
+        "center": true,
+        "decorations": true,
+        "transparent": false
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; connect-src 'self' http://127.0.0.1:* http://localhost:* https:; img-src 'self' data: asset: https:; style-src 'self' 'unsafe-inline'; font-src 'self' data:"
+    },
+    "enableGTKAppId": true
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/64x64.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "category": "DeveloperTool",
+    "shortDescription": "Explore and interact with MongrelDB databases",
+    "longDescription": "MongrelDB Viewer is a multi-platform Signal Deck for opening local MongrelDB databases, visualizing schemas and AI indexes, running SQL and native retrieval, installing dense ANN (384-d), and chatting via OpenAI-compatible APIs or MCP."
+  },
+  "plugins": {}
+}
