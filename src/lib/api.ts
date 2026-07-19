@@ -255,16 +255,6 @@ export async function listEmbeddingModels() {
   );
 }
 
-export async function configureRemoteEmbeddings(cfg: {
-  baseUrl: string;
-  apiKey: string;
-  model: string;
-  dimension: number;
-  providerId: string;
-}) {
-  return invoke<ProviderInfo[]>("configure_remote_embeddings", { cfg });
-}
-
 export async function chatCompletion(messages: ChatMessage[], config: ChatConfig) {
   return invoke<ChatResponse>("chat_completion", { req: { messages, config } });
 }
@@ -315,6 +305,15 @@ export type CrateCredit = {
   repository: string;
 };
 
+export type NpmPackageCredit = {
+  name: string;
+  version: string;
+  license: string;
+  repository: string;
+  /** `"runtime"` production deps, `"dev"` build tooling. */
+  role: string;
+};
+
 export type RuntimeComponent = {
   name: string;
   licenses: string;
@@ -325,8 +324,10 @@ export type RuntimeComponent = {
 
 export type CreditsData = {
   crates: CrateCredit[];
+  packages: NpmPackageCredit[];
   runtime: RuntimeComponent[];
   crateCount: number;
+  packageCount: number;
   runtimeCount: number;
 };
 

@@ -153,10 +153,6 @@ impl EmbeddingHub {
         self.inner.lock().remote = Some(cfg);
     }
 
-    pub fn clear_remote(&self) {
-        self.inner.lock().remote = None;
-    }
-
     pub fn embed(&self, texts: &[String], provider_id: Option<&str>) -> AppResult<EmbedResponse> {
         if texts.is_empty() {
             return Err(AppError::Embedding("no texts provided".into()));

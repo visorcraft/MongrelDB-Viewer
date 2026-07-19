@@ -41,7 +41,6 @@ import { Constellation } from "./components/Constellation";
 import { DataTable } from "./components/DataTable";
 import { SqlWorkbench } from "./components/SqlWorkbench";
 import { TableBrowser } from "./components/TableBrowser";
-import "./App.css";
 
 type View =
   | "deck"

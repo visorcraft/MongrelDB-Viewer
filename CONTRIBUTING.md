@@ -79,14 +79,19 @@ cd src-tauri && cargo check && cargo fmt --check
 When you touch embeddings or ANN paths, also exercise the Vector search UI
 against a demo database created from the Welcome screen.
 
-After changing Rust dependencies, regenerate legal inventories:
+After changing Rust **or** npm dependencies, regenerate legal inventories:
 
 ```sh
 scripts/regen-credits.sh
 ```
 
-Commit the updated `src-tauri/legal/crates.json` and
-`src-tauri/legal/third-party.md` with the dependency change.
+Commit the updated inventories with the dependency change:
+
+- `src-tauri/legal/crates.json`
+- `src-tauri/legal/third-party.md`
+- `src-tauri/legal/npm-packages.json`
+- `src-tauri/legal/npm-third-party.md`
+- `src-tauri/legal/acknowledgments.md` (when direct deps or versions change)
 
 ### Linux taskbar icon (optional)
 

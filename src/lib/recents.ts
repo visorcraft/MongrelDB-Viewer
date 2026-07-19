@@ -30,7 +30,3 @@ export function pushRecent(entry: Omit<RecentConnection, "at">) {
   localStorage.setItem(KEY, JSON.stringify(list));
   return list;
 }
-
-export function clearRecents() {
-  localStorage.removeItem(KEY);
-}

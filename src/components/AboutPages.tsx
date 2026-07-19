@@ -139,8 +139,9 @@ function AboutPage(props: { onLicenses: () => void; onCredits: () => void }) {
         <section className="about-legal-card">
           <div className="about-legal-title">Licenses &amp; Credits</div>
           <p className="about-legal-body">
-            Every direct + transitive crate, acknowledgments, and full license
-            text is bundled in the built-in licenses view.
+            Every direct + transitive Rust crate and npm package,
+            acknowledgments, runtime components, and full license texts are
+            bundled in the built-in licenses and credits views.
           </p>
           <div className="about-legal-actions">
             <button type="button" className="btn ghost" onClick={props.onLicenses}>
@@ -285,7 +286,8 @@ function LicensesPage(props: { onBack: () => void }) {
 
 function CreditsPage(props: { onBack: () => void }) {
   const [data, setData] = useState<CreditsData | null>(null);
-  const [filter, setFilter] = useState("");
+  const [crateFilter, setCrateFilter] = useState("");
+  const [pkgFilter, setPkgFilter] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const [licenseDialog, setLicenseDialog] = useState<{
     title: string;
@@ -300,7 +302,7 @@ function CreditsPage(props: { onBack: () => void }) {
 
   const crates = useMemo(() => {
     const rows = data?.crates ?? [];
-    const needle = filter.trim().toLowerCase();
+    const needle = crateFilter.trim().toLowerCase();
     if (!needle) return rows;
     return rows.filter(
       (r) =>
@@ -308,7 +310,20 @@ function CreditsPage(props: { onBack: () => void }) {
         r.version.toLowerCase().includes(needle) ||
         r.license.toLowerCase().includes(needle),
     );
-  }, [data, filter]);
+  }, [data, crateFilter]);
+
+  const packages = useMemo(() => {
+    const rows = data?.packages ?? [];
+    const needle = pkgFilter.trim().toLowerCase();
+    if (!needle) return rows;
+    return rows.filter(
+      (r) =>
+        r.name.toLowerCase().includes(needle) ||
+        r.version.toLowerCase().includes(needle) ||
+        r.license.toLowerCase().includes(needle) ||
+        r.role.toLowerCase().includes(needle),
+    );
+  }, [data, pkgFilter]);
 
   const openRuntimeLicense = async (comp: RuntimeComponent) => {
     if (!comp.spdx.length) {
@@ -336,7 +351,7 @@ function CreditsPage(props: { onBack: () => void }) {
         <h1>Credits</h1>
         <p className="about-header-sub">
           {data
-            ? `${data.crateCount} Cargo crates · ${data.runtimeCount} runtime components`
+            ? `${data.crateCount} Cargo crates · ${data.packageCount} npm packages · ${data.runtimeCount} runtime components`
             : "Loading…"}
         </p>
       </header>
@@ -382,13 +397,74 @@ function CreditsPage(props: { onBack: () => void }) {
         </div>
       </section>
 
+      <div className="about-section-label">npm packages</div>
+      <p className="field-hint" style={{ marginTop: 0 }}>
+        Installed JavaScript packages from the workspace lockfile (runtime UI
+        plus build tooling). Full texts: Licenses → Frontend (npm).
+      </p>
+      <div className="credits-filter-row">
+        <input
+          className="control licenses-filter"
+          placeholder="Filter by package name, role, or license…"
+          value={pkgFilter}
+          onChange={(e) => setPkgFilter(e.target.value)}
+        />
+        <span className="licenses-linecount">
+          {packages.length} / {data?.packageCount ?? 0}
+        </span>
+      </div>
+
+      <div className="credits-table-wrap">
+        <table className="credits-table">
+          <thead>
+            <tr>
+              <th>Package</th>
+              <th>Version</th>
+              <th>Role</th>
+              <th>License expression</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {packages.map((p) => (
+              <tr key={`${p.name}@${p.version}`}>
+                <td className="mono">{p.name}</td>
+                <td className="mono muted">{p.version}</td>
+                <td>
+                  <span className="license-chip">{p.role || "-"}</span>
+                </td>
+                <td>
+                  <span className="license-chip">{p.license || "-"}</span>
+                </td>
+                <td>
+                  {p.repository ? (
+                    <button
+                      type="button"
+                      className="btn ghost sm"
+                      title={p.repository}
+                      onClick={() => void openUrl(p.repository)}
+                    >
+                      ↗
+                    </button>
+                  ) : null}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
       <div className="about-section-label">Cargo crates</div>
+      <p className="field-hint" style={{ marginTop: 0 }}>
+        Every direct and transitive Rust crate. Full texts: Licenses →
+        Third-party (Rust).
+      </p>
       <div className="credits-filter-row">
         <input
           className="control licenses-filter"
           placeholder="Filter by crate name or license…"
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
+          value={crateFilter}
+          onChange={(e) => setCrateFilter(e.target.value)}
         />
         <span className="licenses-linecount">
           {crates.length} / {data?.crateCount ?? 0}

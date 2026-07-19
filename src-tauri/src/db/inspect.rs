@@ -371,12 +371,3 @@ impl ColumnFlagsBits {
     const EMBEDDING_BINARY_QUANTIZED: u32 =
         mongreldb_core::schema::ColumnFlags::EMBEDDING_BINARY_QUANTIZED;
 }
-
-trait FlagContains {
-    fn contains(&self, flag: u32) -> bool;
-}
-impl FlagContains for mongreldb_core::schema::ColumnFlags {
-    fn contains(&self, flag: u32) -> bool {
-        mongreldb_core::schema::ColumnFlags::contains(self, flag)
-    }
-}

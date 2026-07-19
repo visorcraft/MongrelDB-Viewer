@@ -7,7 +7,6 @@ use mongreldb_core::schema::{
 };
 use mongreldb_core::{Database, Value};
 use mongreldb_query::MongrelSession;
-use parking_lot::RwLock;
 
 use crate::error::{AppError, AppResult};
 
@@ -549,11 +548,4 @@ fn open_existing(
         (None, None, None) => Database::open(path).map_err(AppError::db),
         _ => Err(AppError::msg("invalid credential combination")),
     }
-}
-
-/// Process-wide active session.
-pub type SharedDb = Arc<RwLock<Option<DbSession>>>;
-
-pub fn new_shared() -> SharedDb {
-    Arc::new(RwLock::new(None))
 }

@@ -28,6 +28,17 @@ pub struct CrateCredit {
     pub repository: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NpmPackageCredit {
+    pub name: String,
+    pub version: String,
+    pub license: String,
+    pub repository: String,
+    /// `"runtime"` for production dependencies, `"dev"` for build tooling.
+    pub role: String,
+}
+
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RuntimeComponent {
@@ -42,8 +53,10 @@ pub struct RuntimeComponent {
 #[serde(rename_all = "camelCase")]
 pub struct CreditsData {
     pub crates: Vec<CrateCredit>,
+    pub packages: Vec<NpmPackageCredit>,
     pub runtime: Vec<RuntimeComponent>,
     pub crate_count: usize,
+    pub package_count: usize,
     pub runtime_count: usize,
 }
 
@@ -81,8 +94,13 @@ pub fn license_docs() -> Vec<LicenseDocMeta> {
         },
         LicenseDocMeta {
             id: "third-party".into(),
-            title: "Third-party".into(),
+            title: "Third-party (Rust)".into(),
             subtitle: "cargo-about bundle with every direct and transitive Rust crate, grouped by license text.".into(),
+        },
+        LicenseDocMeta {
+            id: "npm".into(),
+            title: "Frontend (npm)".into(),
+            subtitle: "Installed JavaScript packages (runtime and build tooling) with full license texts.".into(),
         },
         LicenseDocMeta {
             id: "acknowledgments".into(),
@@ -114,6 +132,9 @@ pub fn license_document(id: &str) -> AppResult<String> {
         )),
         "app-apache" | "apache" => Ok(include_str!("../legal/LICENSE-APACHE.txt").into()),
         "third-party" | "third_party" => Ok(include_str!("../legal/third-party.md").into()),
+        "npm" | "frontend" | "npm-third-party" => {
+            Ok(include_str!("../legal/npm-third-party.md").into())
+        }
         "acknowledgments" | "credits-narrative" => {
             Ok(include_str!("../legal/acknowledgments.md").into())
         }
@@ -127,13 +148,20 @@ pub fn credits_data() -> AppResult<CreditsData> {
         serde_json::from_str(include_str!("../legal/crates.json")).map_err(|e| {
             AppError::msg(format!("failed to parse bundled crates.json: {e}"))
         })?;
+    let packages: Vec<NpmPackageCredit> =
+        serde_json::from_str(include_str!("../legal/npm-packages.json")).map_err(|e| {
+            AppError::msg(format!("failed to parse bundled npm-packages.json: {e}"))
+        })?;
     let runtime = runtime_components();
     let crate_count = crates.len();
+    let package_count = packages.len();
     let runtime_count = runtime.len();
     Ok(CreditsData {
         crates,
+        packages,
         runtime,
         crate_count,
+        package_count,
         runtime_count,
     })
 }

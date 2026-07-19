@@ -1,11 +1,9 @@
 //! Unified connection: exclusive direct (embedded) or multi-client server HTTP.
 
-use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Instant;
 
 use mongreldb_client::MongrelClient;
-use mongreldb_core::Database;
 use mongreldb_query::MongrelSession;
 use parking_lot::RwLock;
 
@@ -31,25 +29,7 @@ pub struct ServerSession {
 
 pub type SharedConnection = Arc<RwLock<Option<Connection>>>;
 
-pub fn new_shared() -> SharedConnection {
-    Arc::new(RwLock::new(None))
-}
-
 impl Connection {
-    pub fn mode(&self) -> &'static str {
-        match self {
-            Self::Direct(_) => "direct",
-            Self::Server(_) => "server",
-        }
-    }
-
-    pub fn display_label(&self) -> String {
-        match self {
-            Self::Direct(d) => d.path.display().to_string(),
-            Self::Server(s) => s.url.clone(),
-        }
-    }
-
     pub fn as_direct(&self) -> AppResult<&DbSession> {
         match self {
             Self::Direct(d) => Ok(d),
@@ -481,10 +461,4 @@ fn parse_embedding_dim(ty: &str) -> Option<u32> {
     // "Embedding(384)" or "embedding { dim: 384 }" etc.
     let digits: String = ty.chars().filter(|c| c.is_ascii_digit()).collect();
     digits.parse().ok()
-}
-
-// silence unused import of Database when only re-exporting
-#[allow(dead_code)]
-fn _types() -> Option<(PathBuf, Arc<Database>, Arc<MongrelSession>)> {
-    None
 }

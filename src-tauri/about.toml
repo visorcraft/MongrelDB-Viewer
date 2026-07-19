@@ -1,3 +1,4 @@
+# Application crate has publish = false; ignore unpublished workspace members.
 private = { ignore = true }
 
 accepted = [

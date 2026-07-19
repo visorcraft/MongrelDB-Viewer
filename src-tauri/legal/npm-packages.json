@@ -1,0 +1,198 @@
+[
+  {
+    "name": "@oxc-project/types",
+    "version": "0.139.0",
+    "license": "MIT",
+    "repository": "https://github.com/oxc-project/oxc",
+    "role": "dev"
+  },
+  {
+    "name": "@rolldown/binding-linux-x64-gnu",
+    "version": "1.1.5",
+    "license": "MIT",
+    "repository": "https://github.com/rolldown/rolldown",
+    "role": "dev"
+  },
+  {
+    "name": "@rolldown/pluginutils",
+    "version": "1.0.1",
+    "license": "MIT",
+    "repository": "https://github.com/rolldown/plugins",
+    "role": "dev"
+  },
+  {
+    "name": "@tauri-apps/api",
+    "version": "2.11.1",
+    "license": "Apache-2.0 OR MIT",
+    "repository": "https://github.com/tauri-apps/tauri",
+    "role": "runtime"
+  },
+  {
+    "name": "@tauri-apps/cli",
+    "version": "2.11.4",
+    "license": "Apache-2.0 OR MIT",
+    "repository": "https://github.com/tauri-apps/tauri",
+    "role": "dev"
+  },
+  {
+    "name": "@tauri-apps/cli-linux-x64-gnu",
+    "version": "2.11.4",
+    "license": "Apache-2.0 OR MIT",
+    "repository": "https://github.com/tauri-apps/tauri",
+    "role": "dev"
+  },
+  {
+    "name": "@tauri-apps/plugin-dialog",
+    "version": "2.7.2",
+    "license": "MIT OR Apache-2.0",
+    "repository": "https://github.com/tauri-apps/plugins-workspace",
+    "role": "runtime"
+  },
+  {
+    "name": "@tauri-apps/plugin-opener",
+    "version": "2.5.4",
+    "license": "MIT OR Apache-2.0",
+    "repository": "https://github.com/tauri-apps/plugins-workspace",
+    "role": "runtime"
+  },
+  {
+    "name": "@types/react",
+    "version": "19.2.17",
+    "license": "MIT",
+    "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+    "role": "dev"
+  },
+  {
+    "name": "@types/react-dom",
+    "version": "19.2.3",
+    "license": "MIT",
+    "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+    "role": "dev"
+  },
+  {
+    "name": "@vitejs/plugin-react",
+    "version": "6.0.3",
+    "license": "MIT",
+    "repository": "https://github.com/vitejs/vite-plugin-react",
+    "role": "dev"
+  },
+  {
+    "name": "csstype",
+    "version": "3.2.3",
+    "license": "MIT",
+    "repository": "https://github.com/frenic/csstype",
+    "role": "dev"
+  },
+  {
+    "name": "detect-libc",
+    "version": "2.1.2",
+    "license": "Apache-2.0",
+    "repository": "https://github.com/lovell/detect-libc",
+    "role": "dev"
+  },
+  {
+    "name": "fdir",
+    "version": "6.5.0",
+    "license": "MIT",
+    "repository": "https://github.com/thecodrr/fdir",
+    "role": "dev"
+  },
+  {
+    "name": "lightningcss",
+    "version": "1.32.0",
+    "license": "MPL-2.0",
+    "repository": "https://github.com/parcel-bundler/lightningcss",
+    "role": "dev"
+  },
+  {
+    "name": "lightningcss-linux-x64-gnu",
+    "version": "1.32.0",
+    "license": "MPL-2.0",
+    "repository": "https://github.com/parcel-bundler/lightningcss",
+    "role": "dev"
+  },
+  {
+    "name": "nanoid",
+    "version": "3.3.16",
+    "license": "MIT",
+    "repository": "ai/nanoid",
+    "role": "dev"
+  },
+  {
+    "name": "picocolors",
+    "version": "1.1.1",
+    "license": "ISC",
+    "repository": "alexeyraspopov/picocolors",
+    "role": "dev"
+  },
+  {
+    "name": "picomatch",
+    "version": "4.0.5",
+    "license": "MIT",
+    "repository": "micromatch/picomatch",
+    "role": "dev"
+  },
+  {
+    "name": "postcss",
+    "version": "8.5.20",
+    "license": "MIT",
+    "repository": "postcss/postcss",
+    "role": "dev"
+  },
+  {
+    "name": "react",
+    "version": "19.2.7",
+    "license": "MIT",
+    "repository": "https://github.com/facebook/react",
+    "role": "runtime"
+  },
+  {
+    "name": "react-dom",
+    "version": "19.2.7",
+    "license": "MIT",
+    "repository": "https://github.com/facebook/react",
+    "role": "runtime"
+  },
+  {
+    "name": "rolldown",
+    "version": "1.1.5",
+    "license": "MIT",
+    "repository": "https://github.com/rolldown/rolldown",
+    "role": "dev"
+  },
+  {
+    "name": "scheduler",
+    "version": "0.27.0",
+    "license": "MIT",
+    "repository": "https://github.com/facebook/react",
+    "role": "runtime"
+  },
+  {
+    "name": "source-map-js",
+    "version": "1.2.1",
+    "license": "BSD-3-Clause",
+    "repository": "7rulnik/source-map-js",
+    "role": "dev"
+  },
+  {
+    "name": "tinyglobby",
+    "version": "0.2.17",
+    "license": "MIT",
+    "repository": "https://github.com/SuperchupuDev/tinyglobby",
+    "role": "dev"
+  },
+  {
+    "name": "typescript",
+    "version": "5.9.3",
+    "license": "Apache-2.0",
+    "repository": "https://github.com/microsoft/TypeScript",
+    "role": "dev"
+  },
+  {
+    "name": "vite",
+    "version": "8.1.5",
+    "license": "MIT",
+    "repository": "https://github.com/vitejs/vite",
+    "role": "dev"
+  }
+]

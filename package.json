@@ -1,7 +1,7 @@
 {
   "name": "mongreldb-viewer",
   "private": true,
-  "version": "1.0.2",
+  "version": "1.0.3",
   "type": "module",
   "description": "MongrelDB Viewer - multi-platform Signal Deck for exploring AI-native MongrelDB databases",
   "scripts": {
@@ -21,11 +21,8 @@
     "@tauri-apps/cli": "^2",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
-    "@vitejs/plugin-react": "^4.6.0",
-    "typescript": "~5.8.3",
-    "vite": "^7.0.4"
-  },
-  "allowScripts": {
-    "esbuild@0.28.1": true
+    "@vitejs/plugin-react": "^6.0.0",
+    "typescript": "~5.9.3",
+    "vite": "^8.1.5"
   }
 }
