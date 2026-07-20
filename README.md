@@ -72,7 +72,7 @@ MCP and in-app chat are **not exclusive** - both can use the same open database 
 - Rust **1.88+** (MongrelDB rust-version)
 - Node.js **22+**
 
-MongrelDB is pulled from crates.io (`mongreldb-core` / `mongreldb-query` **0.60.3** - latest release). No engine source checkout required.
+MongrelDB is pulled from crates.io (`mongreldb-core` / `mongreldb-query` **0.61.1** - latest release). No engine source checkout required.
 
 Linux also needs typical Tauri system libs (`webkit2gtk`, `libayatana-appindicator`, etc.). See [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/).
 
@@ -194,8 +194,8 @@ src-tauri/
 Engine crates (crates.io):
 
 ```toml
-mongreldb-core  = "0.60.3"
-mongreldb-query = "0.60.3"
+mongreldb-core  = "0.61.1"
+mongreldb-query = "0.61.1"
 ```
 
 ## License
