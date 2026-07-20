@@ -148,7 +148,7 @@ function AboutPage(props: { onLicenses: () => void; onCredits: () => void }) {
               ☰ Licenses
             </button>
             <button type="button" className="btn ghost" onClick={props.onCredits}>
-              ℹ Credits
+              ⓘ Credits
             </button>
           </div>
         </section>

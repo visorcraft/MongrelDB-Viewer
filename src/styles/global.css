@@ -802,7 +802,7 @@ table.data tr:hover td {
   color: var(--muted);
   font-size: 13px;
   line-height: 1.55;
-  max-width: 46ch;
+  max-width: 66ch;
   margin-left: auto;
   margin-right: auto;
 }
