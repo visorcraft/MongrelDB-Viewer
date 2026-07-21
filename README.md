@@ -20,9 +20,10 @@
 
 ---
 
-## Screenshots
+## Gallery
 
-Captured against a local demo dataset in Direct Mode.
+Captured at ~1080p against a local demo dataset in Direct Mode
+(`/tmp/mongreldb-viewer-gallery-demo`: tenants, authors, documents with dense ANN, events, tags).
 
 | Deck | Schema map |
 |:----:|:----------:|
