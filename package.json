@@ -1,7 +1,7 @@
 {
   "name": "mongreldb-viewer",
   "private": true,
-  "version": "1.2.1",
+  "version": "1.3.0",
   "type": "module",
   "description": "MongrelDB Viewer - multi-platform Signal Deck for exploring AI-native MongrelDB databases",
   "scripts": {

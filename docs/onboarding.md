@@ -59,7 +59,7 @@ The top bar shows:
 - **Direct** or **Server** mode badge  
 - Display path or URL  
 - Engine version  
-- **Disconnect** (releases exclusive lock / drops server session)
+- **Path chip** in the top bar → confirm **Disconnect** (releases exclusive lock / drops server session)
 
 The left **rail** switches pages:
 
@@ -92,7 +92,7 @@ the connection pills. The palette jumps to pages, tables, and suggested queries.
 ## Safety tips
 
 - Do not paste real production secrets into chat system prompts or screenshots.
-- Prefer **Disconnect** before closing the app when using Direct mode so the
+- Prefer disconnecting via the path chip before closing the app when using Direct mode so the
   lock is released cleanly.
 - Treat the MCP HTTP endpoint as local tooling - do not expose it on untrusted
   networks without extra controls.

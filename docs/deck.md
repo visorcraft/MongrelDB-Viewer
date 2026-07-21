@@ -1,50 +1,54 @@
 # Deck (Overview)
 
-**Deck** is the home dashboard after you connect. It summarizes the open
-database and jumps into exploration.
+**MongrelDB Deck** is the home dashboard after you connect. Click the **helmet**
+icon at the top of the left rail anytime to return here.
+
+When no database is open, the rail shows only the helmet and **About**. Deck,
+Stars, Table, SQL, ANN, Agent, MCP, and Sync appear after you connect.
 
 ## What you see
 
-### Stat cards
+### Hero (Overview)
 
-Typical cards include:
+Connection label (path or server URL), engine/query versions, git SHA, ANN
+readiness, and session uptime. Quick jumps: Schema map, SQL, Vector search
+(same ghost style; cyan fill on hover).
+
+### Stat cards
 
 - **Tables** - table count  
 - **Rows** - sum of table row counts (when available)  
-- **ANN tables** - how many tables already have dense ANN  
+- **Secondary indexes** - total secondary indexes across tables  
 
-Exact cards can vary with connection mode and engine metadata.
+### Index radar
+
+How many tables offer each of the six public index kinds (Bitmap, Range, Text,
+ANN, Sparse, MinHash).
+
+### Insights
+
+Schema-driven cards (clickable when they carry a SQL recipe).
 
 ### Try these
 
-When the app can infer safe, schema-driven recipes (especially on the demo
-database), chips appear for common explorations - for example open a table,
-run a sample `SELECT`, or jump to vector search. Clicking a recipe either
-changes page or fills the SQL console.
+Safe recipes for this catalog - chips open the SQL console with a ready
+statement.
 
 ### Tables panel
 
-A roster of tables with:
+Roster with row/column/index counts and capability chips. Click a name for
+**Table**, or **Preview** for a sample `SELECT`.
 
-- name  
-- row count  
-- column count  
-- index count  
-- capability chips (Bitmap, Range, Text, ANN, Sparse, MinHash, …)  
-
-Click a table name (or open action) to go to **Table** for that relation.
-
-The panel shows Direct vs Server mode. Disconnect lives in the **top bar**, not
-on this card.
+Disconnect by clicking the path chip in the **top bar** (confirms first).
 
 ## Refresh
 
-Use **Sync** on the rail to reload overview, insights, and related metadata
-after DDL or ANN install.
+Use **Sync** on the rail (connected only) to reload overview and insights after
+DDL or ANN install.
 
 ## Tips
 
-- Prefer Deck after reconnecting to confirm which root or server URL is open.  
+- Helmet → Overview is the fastest way back after exploring.  
 - Capability chips are a quick ANN readiness check before Vector search.  
 
 Related: [Table](table.md) · [Schema map](constellation.md) · [Onboarding](onboarding.md)

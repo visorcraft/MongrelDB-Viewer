@@ -103,6 +103,26 @@ button {
   margin-bottom: 12px;
   box-shadow: 0 0 24px rgba(61, 255, 232, 0.12);
   overflow: hidden;
+  padding: 0;
+  flex-shrink: 0;
+  transition: 160ms ease;
+}
+
+button.brand-mark:hover {
+  border-color: var(--cyan);
+  box-shadow: 0 0 28px rgba(61, 255, 232, 0.28);
+  transform: translateY(-1px);
+}
+
+button.brand-mark.active {
+  border-color: rgba(94, 240, 224, 0.65);
+  box-shadow: 0 0 32px rgba(61, 255, 232, 0.32);
+  background: linear-gradient(160deg, rgba(94, 240, 224, 0.12), #0a101a 55%);
+}
+
+button.brand-mark:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
 }
 
 .brand-mark img {
@@ -954,6 +974,22 @@ select option {
   justify-content: flex-end;
 }
 
+/* Match mode / path chips to Ctrl+F button geometry (height + radius). */
+.topbar-actions .mode-badge,
+.topbar-actions .pill,
+.topbar-actions .btn {
+  box-sizing: border-box;
+  height: 36px;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 12px;
+  font-size: 12px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .mode-badge {
   font-size: 11px;
   font-weight: 700;
@@ -976,6 +1012,59 @@ select option {
   border-color: #ff7ae8;
 }
 
+/* Top bar keeps mode colors but uses button-shaped chips (not full pill). */
+.topbar-actions .mode-badge {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.topbar-actions .pill {
+  border: 1px solid var(--line);
+  background: rgba(20, 28, 42, 0.95);
+  color: var(--text);
+  font-weight: 500;
+  max-width: min(42vw, 360px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Path chip doubles as disconnect control — same geometry + danger hover. */
+.topbar-actions button.path-disconnect-btn {
+  cursor: pointer;
+  font: inherit;
+  max-width: min(42vw, 360px);
+  border: 1px solid var(--line);
+  background: rgba(20, 28, 42, 0.95);
+  color: var(--text);
+  transition: 140ms ease;
+}
+
+.topbar-actions button.path-disconnect-btn .path-disconnect-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.topbar-actions button.path-disconnect-btn:hover:not(:disabled) {
+  border-color: rgba(255, 122, 146, 0.5);
+  color: #ffd0d9;
+  background: rgba(255, 92, 122, 0.22);
+}
+
+.topbar-actions button.path-disconnect-btn:hover:not(:disabled) .dot {
+  background: var(--danger);
+  box-shadow: 0 0 10px rgba(255, 122, 146, 0.55);
+}
+
+.topbar-actions button.path-disconnect-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .btn.danger {
   border-color: rgba(255, 122, 146, 0.5);
   color: #ffd0d9;
@@ -985,6 +1074,110 @@ select option {
 .btn.danger:hover {
   background: rgba(255, 92, 122, 0.22);
   color: #fff;
+}
+
+/* Disconnect confirmation modal */
+.disconnect-dialog {
+  position: relative;
+  width: min(440px, 92vw);
+  margin-top: 18vh;
+  padding: 28px 26px 22px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: linear-gradient(
+    160deg,
+    rgba(28, 18, 24, 0.98),
+    rgba(14, 18, 28, 0.98) 45%,
+    rgba(16, 22, 34, 0.99)
+  );
+  box-shadow: var(--shadow), 0 0 0 1px rgba(255, 122, 146, 0.08);
+  text-align: center;
+  overflow: hidden;
+}
+
+.disconnect-dialog-halo {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at 50% 0%,
+    rgba(255, 92, 122, 0.14),
+    transparent 55%
+  );
+  pointer-events: none;
+}
+
+.disconnect-dialog-icon {
+  position: relative;
+  z-index: 1;
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: #0a101a;
+  object-fit: contain;
+  padding: 6px;
+  margin-bottom: 14px;
+}
+
+.disconnect-dialog h2 {
+  position: relative;
+  z-index: 1;
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-size: 26px;
+  letter-spacing: -0.03em;
+}
+
+.disconnect-dialog-body {
+  position: relative;
+  z-index: 1;
+  margin: 0 0 16px;
+  color: var(--muted);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.disconnect-dialog-path {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  margin: 0 auto 20px;
+  padding: 8px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 122, 146, 0.28);
+  background: rgba(255, 92, 122, 0.08);
+  color: #ffd0d9;
+  font-size: 12.5px;
+  font-family: var(--font-mono);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.disconnect-dialog-path .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--danger);
+  box-shadow: 0 0 10px rgba(255, 122, 146, 0.55);
+}
+
+.disconnect-dialog-actions {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.disconnect-dialog-actions .btn {
+  min-width: 140px;
+  justify-content: center;
 }
 
 /* Command palette */
@@ -1101,6 +1294,152 @@ select option {
   padding: 1px 6px;
   background: rgba(255, 255, 255, 0.04);
   color: var(--text);
+}
+
+/* Overview / Signal Deck */
+.deck-hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 20px;
+  align-items: center;
+  padding: 20px 22px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: linear-gradient(
+    120deg,
+    rgba(94, 240, 224, 0.1),
+    rgba(16, 22, 34, 0.96) 40%,
+    rgba(255, 90, 216, 0.05)
+  );
+  overflow: hidden;
+}
+
+.deck-hero-halo {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 280px;
+  background: radial-gradient(circle at 28% 50%, rgba(94, 240, 224, 0.18), transparent 72%);
+  pointer-events: none;
+}
+
+.deck-hero-icon {
+  position: relative;
+  z-index: 1;
+  width: 72px;
+  height: 72px;
+  border-radius: 18px;
+  border: 1px solid var(--line-strong);
+  background: #0a101a;
+  object-fit: contain;
+  padding: 8px;
+  box-shadow: 0 0 28px rgba(61, 255, 232, 0.14);
+}
+
+.deck-hero-text {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+}
+
+.deck-hero-kicker {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--cyan);
+  margin-bottom: 4px;
+}
+
+.deck-hero-text h2 {
+  margin: 0 0 6px;
+  font-family: var(--font-display);
+  font-size: 26px;
+  letter-spacing: -0.03em;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.deck-hero-text > p {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.deck-hero-actions {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 132px;
+}
+
+.deck-hero-actions .btn {
+  width: 100%;
+  justify-content: center;
+}
+
+/* Ghost actions: rest like Schema map/SQL; hover fills cyan like primary. */
+.deck-hero-actions .btn.ghost {
+  background: transparent;
+  border-color: var(--line);
+  color: var(--text);
+  font-weight: 500;
+  box-shadow: none;
+}
+
+.deck-hero-actions .btn.ghost:hover {
+  background: linear-gradient(135deg, var(--cyan), #9dfff4);
+  color: #041016;
+  border-color: transparent;
+  font-weight: 700;
+  filter: brightness(1.05);
+  box-shadow: 0 0 24px rgba(61, 255, 232, 0.28);
+}
+
+.deck-radar {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px 16px;
+}
+
+.deck-radar-item .bar {
+  margin-top: 8px;
+  height: 6px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+
+.deck-radar-item .bar > i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--cyan), var(--violet));
+  min-width: 0;
+}
+
+@media (max-width: 960px) {
+  .deck-hero {
+    grid-template-columns: auto 1fr;
+  }
+  .deck-hero-actions {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    flex-wrap: wrap;
+    min-width: 0;
+  }
+  .deck-hero-actions .btn {
+    width: auto;
+    flex: 1;
+  }
+  .deck-radar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 /* Insights + recipes */
@@ -1632,6 +1971,46 @@ select option {
   gap: 10px;
 }
 
+/* Soft cyan ring hover (same as about-link-card / Visit repo). */
+.about-legal-actions .btn.ghost,
+.topbar-actions .btn.ghost,
+button.btn.soft-ring-btn {
+  border-color: var(--line) !important;
+  background: rgba(16, 22, 34, 0.92) !important;
+  color: var(--text) !important;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease,
+    transform 0.15s ease !important;
+}
+
+.about-legal-actions .btn.ghost:hover,
+.topbar-actions .btn.ghost:hover,
+button.btn.soft-ring-btn:hover:not(:disabled) {
+  border-color: var(--line-strong) !important;
+  box-shadow: 0 0 0 3px rgba(94, 240, 224, 0.12) !important;
+  background: rgba(16, 22, 34, 0.96) !important;
+  color: var(--text) !important;
+  filter: none !important;
+}
+
+/*
+ * Credits tables clip outer shadows (overflow:auto). Match Visit-repo feel with
+ * a bright border + cyan fill so hover is obvious on ↗ open-project buttons.
+ */
+.credits-table button.btn.soft-ring-btn:hover:not(:disabled),
+.credits-runtime-actions button.btn.soft-ring-btn:hover:not(:disabled) {
+  border-color: rgba(94, 240, 224, 0.7) !important;
+  background: rgba(94, 240, 224, 0.16) !important;
+  color: var(--cyan) !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(94, 240, 224, 0.35),
+    0 0 12px rgba(94, 240, 224, 0.2) !important;
+  transform: translateY(-1px);
+}
+
 .about-footer {
   text-align: center;
   color: var(--muted);
@@ -1813,6 +2192,21 @@ select option {
   overflow: auto;
   max-height: min(58vh, 680px);
   background: rgba(8, 12, 20, 0.9);
+  /* Room for button hover glow / transform so it is not fully clipped */
+  padding: 4px;
+}
+
+.credits-table td:last-child {
+  width: 1%;
+  white-space: nowrap;
+  padding-right: 14px;
+}
+
+.credits-table button.btn.soft-ring-btn {
+  min-width: 34px;
+  min-height: 34px;
+  display: inline-grid;
+  place-items: center;
 }
 
 .credits-table {

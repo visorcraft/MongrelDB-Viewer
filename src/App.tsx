@@ -174,6 +174,7 @@ export default function App() {
   const [sqlHistory, setSqlHistory] = useState<string[]>([]);
   const [insights, setInsights] = useState<DbInsights | null>(null);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [disconnectOpen, setDisconnectOpen] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [recents, setRecents] = useState<RecentConnection[]>(() => loadRecents());
   const [connectedAt, setConnectedAt] = useState<number | null>(null);
@@ -192,13 +193,8 @@ export default function App() {
   const [annResult, setAnnResult] = useState<SqlResult | null>(null);
   const [modelsNote, setModelsNote] = useState("");
 
-  // Chat
-  const [chatCfg, setChatCfg] = useState<ChatConfig>({
-    baseUrl: "https://api.openai.com/v1",
-    apiKey: "",
-    model: "gpt-4o-mini",
-    systemPrompt: null,
-  });
+  // Chat (endpoint config persisted in localStorage on Save)
+  const [chatCfg, setChatCfg] = useState<ChatConfig>(() => loadChatConfig());
   const [chatInput, setChatInput] = useState("");
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
 
@@ -318,7 +314,7 @@ export default function App() {
     if (typeof selected === "string") setPath(selected);
   };
 
-  const applyConnected = async (ov: DatabaseOverview, message: string) => {
+  const applyConnected = async (ov: DatabaseOverview) => {
     setOverview(ov);
     setSelectedTable(ov.tables[0]?.name ?? "");
     setAnnTable(ov.tables[0]?.name ?? "");
@@ -350,7 +346,7 @@ export default function App() {
     } catch {
       setInsights(null);
     }
-    setOk(message);
+    setOk(null);
     setView("deck");
   };
 
@@ -367,7 +363,7 @@ export default function App() {
           path: autoPath.trim(),
           createIfMissing: false,
         });
-        if (!cancelled) await applyConnected(ov, `Opened ${autoPath.trim()}`);
+        if (!cancelled) await applyConnected(ov);
       } catch (e) {
         if (!cancelled) setError(String(e));
       } finally {
@@ -446,10 +442,7 @@ export default function App() {
           username: username || undefined,
           password: password || undefined,
         });
-        await applyConnected(
-          ov,
-          `Connected to server ${ov.displayLabel} (${ov.tableCount} tables)`,
-        );
+        await applyConnected(ov);
         return;
       }
       if (!path.trim()) throw new Error("Choose a database directory");
@@ -460,7 +453,7 @@ export default function App() {
         passphrase: passphrase || undefined,
         createIfMissing: false,
       });
-      await applyConnected(ov, `Opened ${ov.displayLabel} (direct)`);
+      await applyConnected(ov);
     });
 
   const onCreateDemo = () =>
@@ -484,19 +477,20 @@ export default function App() {
         /* backend also sets this on success */
       }
       setDemoUsedState(true);
-      await applyConnected(ov, "Demo database created with sample tables (documents + events).");
+      await applyConnected(ov);
     });
 
   const onClose = () =>
     withBusy(async () => {
       await closeDatabase();
       setOverview(null);
+      setInsights(null);
       setGraph(null);
       setTableDetail(null);
       setSqlResult(null);
       setAnnResult(null);
       setSelectedTable("");
-      setOk("Disconnected");
+      setOk(null);
       setView("deck");
     });
 
@@ -525,6 +519,22 @@ export default function App() {
 
   const paletteActions: PaletteAction[] = useMemo(() => {
     const acts: PaletteAction[] = [];
+    acts.push({
+      id: "view-home",
+      group: "Navigate",
+      label: overview ? "Overview" : "Home / connect",
+      hint: "helmet",
+      run: () => setView("deck"),
+    });
+    acts.push({
+      id: "view-about",
+      group: "Navigate",
+      label: "About",
+      run: () => {
+        setAboutSub("about");
+        setView("about");
+      },
+    });
     if (!overview) {
       acts.push({
         id: "create-demo",
@@ -540,14 +550,12 @@ export default function App() {
       return acts;
     }
     const views: { id: View; label: string }[] = [
-      { id: "deck", label: "Overview" },
       { id: "constellation", label: "Schema map" },
       { id: "table", label: "Table browser" },
       { id: "sql", label: "SQL console" },
       { id: "ann", label: "Vector search" },
       { id: "agent", label: "Chat agent" },
       { id: "mcp", label: "MCP bridge" },
-      { id: "about", label: "About" },
     ];
     for (const v of views) {
       acts.push({
@@ -604,7 +612,7 @@ export default function App() {
       id: "disconnect",
       group: "Session",
       label: "Disconnect",
-      run: () => void onClose(),
+      run: () => setDisconnectOpen(true),
     });
     return acts;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -727,6 +735,10 @@ export default function App() {
 
   const onChat = () =>
     withBusy(async () => {
+      if (!chatCfg.apiKey.trim()) {
+        setError("Enter an API key and click Save before chatting.");
+        return;
+      }
       if (!chatInput.trim()) return;
       const next: ChatMessage[] = [
         ...chatMessages,
@@ -754,9 +766,12 @@ export default function App() {
     });
 
   const title = useMemo(() => {
+    if (!overview && view !== "about") {
+      return ["MongrelDB Viewer", "Open a local root or connect to mongreldb-server"];
+    }
     switch (view) {
       case "deck":
-        return ["Overview", "Tables and stats for the open database"];
+        return ["MongrelDB Deck", "Insights, tables, and capabilities for the open database"];
       case "constellation":
         return ["Schema map", "Tables, columns, and indexes"];
       case "table":
@@ -766,7 +781,7 @@ export default function App() {
       case "ann":
         return ["Vector search", "Install and try semantic search"];
       case "agent":
-        return ["Chat", "Talk to the open database with your API key"];
+        return ["Agent Chat", "Talk to the open database with your API key"];
       case "mcp":
         return ["MCP", "Connect external tools to this database"];
       case "about":
@@ -780,7 +795,7 @@ export default function App() {
       default:
         return ["MongrelDB Viewer", ""];
     }
-  }, [view, aboutSub]);
+  }, [view, aboutSub, overview]);
 
   const uptime =
     connectedAt && overview
@@ -822,26 +837,46 @@ export default function App() {
       )}
       <div className="app-shell">
         <aside className="rail">
-          <div className="brand-mark" title="MongrelDB Viewer">
-            <img src="/helmet-48.png" alt="MongrelDB" width={36} height={36} draggable={false} />
-          </div>
-          {NAV.map((n) => (
-            <button
-              key={n.id}
-              className={`rail-btn ${view === n.id ? "active" : ""}`}
-              onClick={() => setView(n.id)}
-              title={n.label}
-            >
-              <span className="icon">{n.icon}</span>
-              <span className="label">{n.label}</span>
-            </button>
-          ))}
-          <div className="rail-spacer" />
-          <button className="rail-btn" onClick={() => withBusy(refresh)} title="Refresh" disabled={!overview}>
-            <span className="icon">↺</span>
-            <span className="label">Sync</span>
-          </button>
           <button
+            type="button"
+            className={`brand-mark${view === "deck" ? " active" : ""}`}
+            title={
+              overview
+                ? "Overview — database insights"
+                : "MongrelDB Viewer — home"
+            }
+            aria-label="Overview"
+            onClick={() => setView("deck")}
+          >
+            <img src="/helmet-48.png" alt="" width={36} height={36} draggable={false} />
+          </button>
+          {overview &&
+            NAV.map((n) => (
+              <button
+                key={n.id}
+                type="button"
+                className={`rail-btn ${view === n.id ? "active" : ""}`}
+                onClick={() => setView(n.id)}
+                title={n.label}
+              >
+                <span className="icon">{n.icon}</span>
+                <span className="label">{n.label}</span>
+              </button>
+            ))}
+          <div className="rail-spacer" />
+          {overview && (
+            <button
+              type="button"
+              className="rail-btn"
+              onClick={() => withBusy(refresh)}
+              title="Refresh overview and insights"
+            >
+              <span className="icon">↺</span>
+              <span className="label">Sync</span>
+            </button>
+          )}
+          <button
+            type="button"
             className={`rail-btn ${view === "about" ? "active" : ""}`}
             onClick={() => {
               setAboutSub("about");
@@ -863,6 +898,14 @@ export default function App() {
             <div className="topbar-actions">
               {overview ? (
                 <>
+                  <button
+                    type="button"
+                    className="btn ghost"
+                    onClick={() => setPaletteOpen(true)}
+                    title={`Command palette (${paletteShortcutLabel()})`}
+                  >
+                    {paletteShortcutLabel()}
+                  </button>
                   <span
                     className={`mode-badge ${overview.connectionMode === "server" ? "server" : "direct"}`}
                     title={
@@ -873,19 +916,17 @@ export default function App() {
                   >
                     {overview.connectionMode === "server" ? "Server" : "Direct"}
                   </span>
-                  <span className="pill live" title={overview.path}>
-                    <span className="dot" />
-                    {overview.displayLabel || overview.path}
-                  </span>
-                  <span className="pill">v{overview.engineVersion}</span>
                   <button
                     type="button"
-                    className="btn danger"
+                    className="pill live path-disconnect-btn"
+                    title="Click to Disconnect"
                     disabled={busy}
-                    onClick={onClose}
-                    title="Disconnect and release the database"
+                    onClick={() => setDisconnectOpen(true)}
                   >
-                    Disconnect
+                    <span className="dot" />
+                    <span className="path-disconnect-label">
+                      {overview.displayLabel || overview.path}
+                    </span>
                   </button>
                 </>
               ) : (
@@ -900,18 +941,59 @@ export default function App() {
                   MCP {mcp.endpoint}
                 </span>
               )}
-              {overview && (
-                <button
-                  type="button"
-                  className="btn ghost"
-                  onClick={() => setPaletteOpen(true)}
-                  title={`Command palette (${paletteShortcutLabel()})`}
-                >
-                  {paletteShortcutLabel()}
-                </button>
-              )}
             </div>
           </header>
+
+          {disconnectOpen && overview && (
+            <div
+              className="palette-backdrop"
+              role="presentation"
+              onClick={() => !busy && setDisconnectOpen(false)}
+            >
+              <div
+                className="disconnect-dialog"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="disconnect-title"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="disconnect-dialog-halo" aria-hidden />
+                <img
+                  className="disconnect-dialog-icon"
+                  src="/helmet-64.png"
+                  alt=""
+                  width={56}
+                  height={56}
+                  draggable={false}
+                />
+                <h2 id="disconnect-title">Disconnect?</h2>
+                <p className="disconnect-dialog-body">
+                  This will release the connection.
+                </p>
+                <div className="disconnect-dialog-actions">
+                  <button
+                    type="button"
+                    className="btn ghost soft-ring-btn"
+                    disabled={busy}
+                    onClick={() => setDisconnectOpen(false)}
+                  >
+                    Stay connected
+                  </button>
+                  <button
+                    type="button"
+                    className="btn danger"
+                    disabled={busy}
+                    onClick={() => {
+                      setDisconnectOpen(false);
+                      onClose();
+                    }}
+                  >
+                    Disconnect
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           <main
             className={`content${view === "constellation" && overview ? " fill-page" : ""}`}
@@ -962,14 +1044,14 @@ export default function App() {
                         path: r.path!,
                         createIfMissing: false,
                       });
-                      await applyConnected(ov, `Opened ${r.path}`);
+                      await applyConnected(ov);
                     });
                   } else if (r.mode === "server" && r.serverUrl) {
                     setConnectMode("server");
                     setServerUrl(r.serverUrl);
                     void withBusy(async () => {
                       const ov = await openServer({ url: r.serverUrl! });
-                      await applyConnected(ov, `Connected ${r.serverUrl}`);
+                      await applyConnected(ov);
                     });
                   }
                 }}
@@ -986,6 +1068,7 @@ export default function App() {
                       setView("table");
                     }}
                     onRunSql={runSqlText}
+                    onNavigate={(v) => setView(v)}
                   />
                 )}
                 {view === "constellation" && (
@@ -1074,10 +1157,13 @@ export default function App() {
                     setChatInput={setChatInput}
                     chatMessages={chatMessages}
                     onChat={onChat}
-                    onProbe={() =>
+                    onSave={() =>
                       withBusy(async () => {
+                        saveChatConfig(chatCfg);
                         const r = await probeChat(chatCfg);
-                        setOk(JSON.stringify(r));
+                        setOk(
+                          `Saved endpoint · probe: ${typeof r === "object" ? JSON.stringify(r) : String(r)}`,
+                        );
                       })
                     }
                     busy={busy}
@@ -1293,35 +1379,132 @@ function Deck({
   uptimeSec,
   onSelectTable,
   onRunSql,
+  onNavigate,
 }: {
   overview: DatabaseOverview;
   insights: DbInsights | null;
   uptimeSec: number | null;
   onSelectTable: (t: string) => void;
   onRunSql: (sql: string) => void;
+  onNavigate: (v: View) => void;
 }) {
   const annTables = overview.tables.filter((t) => t.hasAnn).length;
   const totalRows = overview.tables.reduce((a, t) => a + Number(t.rowCount), 0);
+  const totalIndexes = overview.tables.reduce((a, t) => a + Number(t.indexCount), 0);
+  const caps = {
+    bitmap: overview.tables.filter((t) => t.hasBitmap).length,
+    range: overview.tables.filter((t) => t.hasLearnedRange).length,
+    fm: overview.tables.filter((t) => t.hasFm).length,
+    ann: annTables,
+    sparse: overview.tables.filter((t) => t.hasSparse).length,
+    minhash: overview.tables.filter((t) => t.hasMinhash).length,
+  };
+  const capMax = Math.max(1, ...Object.values(caps));
+  const isServer = overview.connectionMode === "server";
+  const label = overview.displayLabel || overview.path;
+
   return (
     <div className="stack">
+      <section className="deck-hero" aria-label="Database overview">
+        <div className="deck-hero-halo" aria-hidden />
+        <img
+          className="deck-hero-icon"
+          src="/helmet-64.png"
+          alt=""
+          width={72}
+          height={72}
+          draggable={false}
+        />
+        <div className="deck-hero-text">
+          <div className="deck-hero-kicker">Overview</div>
+          <h2 title={overview.path}>{label}</h2>
+          <p>
+            {isServer ? "Connected via mongreldb-server" : "Direct embedded open"} ·{" "}
+            {overview.tableCount} table{overview.tableCount === 1 ? "" : "s"} ·{" "}
+            {totalRows.toLocaleString()} rows
+            {uptimeSec != null ? ` · session ${formatUptime(uptimeSec)}` : ""}
+          </p>
+          <div className="about-pills">
+            <span className="about-pill mono">engine {overview.engineVersion}</span>
+            {overview.queryVersion ? (
+              <span className="about-pill mono">query {overview.queryVersion}</span>
+            ) : null}
+            {overview.gitSha ? (
+              <span className="about-pill mono" title={overview.gitSha}>
+                {overview.gitSha.slice(0, 12)}
+              </span>
+            ) : null}
+            {annTables > 0 ? (
+              <span className="about-pill accent">{annTables} ANN-ready</span>
+            ) : (
+              <span className="about-pill">no ANN yet</span>
+            )}
+          </div>
+        </div>
+        <div className="deck-hero-actions">
+          <button type="button" className="btn ghost" onClick={() => onNavigate("constellation")}>
+            Schema map
+          </button>
+          <button type="button" className="btn ghost" onClick={() => onNavigate("sql")}>
+            SQL
+          </button>
+          <button type="button" className="btn ghost" onClick={() => onNavigate("ann")}>
+            Vector search
+          </button>
+        </div>
+      </section>
+
       <div className="grid-3">
         <div className="stat-card">
           <div className="k">Tables</div>
           <div className="v">{overview.tableCount}</div>
-          <div className="s">
-            {overview.connectionMode === "server" ? "via mongreldb-server" : "direct open"}
-          </div>
+          <div className="s">{isServer ? "via mongreldb-server" : "direct open"}</div>
         </div>
         <div className="stat-card">
           <div className="k">Total rows</div>
-          <div className="v">{totalRows}</div>
+          <div className="v">{totalRows.toLocaleString()}</div>
           <div className="s">across all tables</div>
         </div>
         <div className="stat-card">
-          <div className="k">Vector-ready</div>
-          <div className="v">{annTables}</div>
+          <div className="k">Secondary indexes</div>
+          <div className="v">{totalIndexes}</div>
           <div className="s">
-            {uptimeSec != null ? `session ${formatUptime(uptimeSec)}` : "tables with ANN"}
+            {annTables > 0
+              ? `${annTables} with dense/binary ANN`
+              : uptimeSec != null
+                ? `session ${formatUptime(uptimeSec)}`
+                : "Bitmap · Range · Text · ANN · Sparse · MinHash"}
+          </div>
+        </div>
+      </div>
+
+      <div className="panel">
+        <div className="panel-header">
+          <h2>Index radar</h2>
+          <span className="muted">tables offering each index kind</span>
+        </div>
+        <div className="panel-body">
+          <div className="deck-radar">
+            {(
+              [
+                ["Bitmap", caps.bitmap, "bitmap"],
+                ["Range", caps.range, "pgm"],
+                ["Text", caps.fm, "fm"],
+                ["ANN", caps.ann, "ann"],
+                ["Sparse", caps.sparse, "sparse"],
+                ["MinHash", caps.minhash, "minhash"],
+              ] as const
+            ).map(([label, n, chip]) => (
+              <div className="deck-radar-item" key={label}>
+                <div className="row" style={{ justifyContent: "space-between" }}>
+                  <span className={`chip ${chip}`}>{label}</span>
+                  <strong>{n}</strong>
+                </div>
+                <div className="bar">
+                  <i style={{ width: `${(n / capMax) * 100}%` }} />
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -1360,13 +1543,13 @@ function Deck({
           </div>
           <div className="panel-body">
             <div className="chip-row">
-              {insights.suggestedQueries.slice(0, 8).map((q) => (
+              {insights.suggestedQueries.slice(0, 10).map((q) => (
                 <button
                   key={q.sql}
                   type="button"
                   className="chip-btn"
                   onClick={() => onRunSql(q.sql)}
-                  title={q.sql}
+                  title={q.description || q.sql}
                 >
                   {q.title}
                 </button>
@@ -1379,8 +1562,8 @@ function Deck({
       <div className="panel">
         <div className="panel-header">
           <h2>Tables</h2>
-          <span className={`mode-badge ${overview.connectionMode === "server" ? "server" : "direct"}`}>
-            {overview.connectionMode === "server" ? "Server" : "Direct"}
+          <span className={`mode-badge ${isServer ? "server" : "direct"}`}>
+            {isServer ? "Server" : "Direct"}
           </span>
         </div>
         <div className="panel-body">
@@ -1426,7 +1609,7 @@ function Deck({
                           </span>
                         )}
                         {t.hasAnn && (
-                          <span className="chip ann" title="HNSW dense ANN">
+                          <span className="chip ann" title="HNSW ANN">
                             ANN
                           </span>
                         )}
@@ -1979,6 +2162,46 @@ function AnnView(props: {
   );
 }
 
+const CHAT_CONFIG_KEY = "mongreldb-viewer.chat-config";
+
+const DEFAULT_CHAT_CONFIG: ChatConfig = {
+  baseUrl: "https://api.openai.com/v1",
+  apiKey: "",
+  model: "gpt-4o-mini",
+  systemPrompt: null,
+};
+
+function loadChatConfig(): ChatConfig {
+  try {
+    const raw = localStorage.getItem(CHAT_CONFIG_KEY);
+    if (!raw) return { ...DEFAULT_CHAT_CONFIG };
+    const parsed = JSON.parse(raw) as Partial<ChatConfig>;
+    return {
+      baseUrl: typeof parsed.baseUrl === "string" ? parsed.baseUrl : DEFAULT_CHAT_CONFIG.baseUrl,
+      apiKey: typeof parsed.apiKey === "string" ? parsed.apiKey : "",
+      model: typeof parsed.model === "string" ? parsed.model : DEFAULT_CHAT_CONFIG.model,
+      systemPrompt:
+        typeof parsed.systemPrompt === "string" || parsed.systemPrompt === null
+          ? parsed.systemPrompt ?? null
+          : null,
+    };
+  } catch {
+    return { ...DEFAULT_CHAT_CONFIG };
+  }
+}
+
+function saveChatConfig(cfg: ChatConfig) {
+  localStorage.setItem(
+    CHAT_CONFIG_KEY,
+    JSON.stringify({
+      baseUrl: cfg.baseUrl,
+      apiKey: cfg.apiKey,
+      model: cfg.model,
+      systemPrompt: cfg.systemPrompt ?? null,
+    }),
+  );
+}
+
 function AgentView(props: {
   chatCfg: ChatConfig;
   setChatCfg: (c: ChatConfig) => void;
@@ -1986,9 +2209,10 @@ function AgentView(props: {
   setChatInput: (s: string) => void;
   chatMessages: ChatMessage[];
   onChat: () => void;
-  onProbe: () => void;
+  onSave: () => void;
   busy: boolean;
 }) {
+  const canSend = !props.busy && !!props.chatCfg.apiKey.trim() && !!props.chatInput.trim();
   return (
     <div className="grid-2">
       <div className="panel">
@@ -2000,6 +2224,9 @@ function AgentView(props: {
             {props.chatMessages.length === 0 && (
               <div className="muted">
                 Ask about schema, write SQL, or run semantic search. The agent has the same tools as MCP.
+                {!props.chatCfg.apiKey.trim()
+                  ? " Enter an API key and click Save before sending."
+                  : ""}
               </div>
             )}
             {props.chatMessages.map((m, i) => (
@@ -2018,9 +2245,21 @@ function AgentView(props: {
               value={props.chatInput}
               onChange={(e) => props.setChatInput(e.target.value)}
               placeholder="What indexes does documents use? Find rows about hybrid retrieval."
+              disabled={!props.chatCfg.apiKey.trim()}
             />
           </div>
-          <button className="btn primary" disabled={props.busy} onClick={props.onChat}>
+          <button
+            className="btn primary"
+            disabled={!canSend}
+            onClick={props.onChat}
+            title={
+              !props.chatCfg.apiKey.trim()
+                ? "Enter an API key in the endpoint form and click Save"
+                : !props.chatInput.trim()
+                  ? "Type a message first"
+                  : "Send message"
+            }
+          >
             Send
           </button>
         </div>
@@ -2028,8 +2267,13 @@ function AgentView(props: {
       <div className="panel">
         <div className="panel-header">
           <h2>OpenAI-compatible endpoint</h2>
-          <button className="btn ghost" disabled={props.busy} onClick={props.onProbe}>
-            Probe
+          <button
+            className="btn ghost"
+            disabled={props.busy}
+            onClick={props.onSave}
+            title="Save endpoint settings and validate connectivity"
+          >
+            Save
           </button>
         </div>
         <div className="panel-body">
@@ -2058,7 +2302,8 @@ function AgentView(props: {
           </div>
           <p className="muted">
             Works with OpenAI, Azure OpenAI, SpaceXAI, Ollama (`http://127.0.0.1:11434/v1`), and any
-            compatible gateway. Tool calls share the MCP tool surface.
+            compatible gateway. Tool calls share the MCP tool surface. Click <strong>Save</strong> to
+            store these settings for next launch and probe the endpoint.
           </p>
         </div>
       </div>

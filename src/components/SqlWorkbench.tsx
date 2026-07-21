@@ -132,7 +132,6 @@ export function SqlWorkbench({
       <div className="panel">
         <div className="panel-header">
           <h2>Recipes</h2>
-          <span className="muted">click to load</span>
         </div>
         <div className="panel-body">
           <div className="chip-row" style={{ marginBottom: 12 }}>

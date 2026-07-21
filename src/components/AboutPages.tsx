@@ -218,7 +218,11 @@ function LicensesPage(props: { onBack: () => void }) {
     <div className="about-page licenses-page">
       <header className="about-header row-header">
         <div>
-          <button type="button" className="btn ghost sm" onClick={props.onBack}>
+          <button
+            type="button"
+            className="btn ghost sm soft-ring-btn"
+            onClick={props.onBack}
+          >
             ← About
           </button>
           <h1>Licenses</h1>
@@ -227,7 +231,7 @@ function LicensesPage(props: { onBack: () => void }) {
           </p>
         </div>
         <div className="licenses-toolbar-actions">
-          <button type="button" className="btn ghost sm" onClick={copy}>
+          <button type="button" className="btn ghost sm soft-ring-btn" onClick={copy}>
             Copy
           </button>
         </div>
@@ -271,7 +275,11 @@ function LicensesPage(props: { onBack: () => void }) {
           />
           Wrap
         </label>
-        <button type="button" className="btn ghost sm" onClick={() => setFilter("")}>
+        <button
+          type="button"
+          className="btn ghost sm soft-ring-btn"
+          onClick={() => setFilter("")}
+        >
           Clear
         </button>
       </div>
@@ -345,7 +353,11 @@ function CreditsPage(props: { onBack: () => void }) {
   return (
     <div className="about-page credits-page">
       <header className="about-header">
-        <button type="button" className="btn ghost sm" onClick={props.onBack}>
+        <button
+          type="button"
+          className="btn ghost sm soft-ring-btn"
+          onClick={props.onBack}
+        >
           ← About
         </button>
         <h1>Credits</h1>
@@ -375,7 +387,7 @@ function CreditsPage(props: { onBack: () => void }) {
               <div className="credits-runtime-actions">
                 <button
                   type="button"
-                  className="btn ghost sm"
+                  className="btn ghost sm soft-ring-btn"
                   title="View license text"
                   onClick={() => void openRuntimeLicense(r)}
                   disabled={!r.spdx.length}
@@ -384,7 +396,7 @@ function CreditsPage(props: { onBack: () => void }) {
                 </button>
                 <button
                   type="button"
-                  className="btn ghost sm"
+                  className="btn ghost sm soft-ring-btn"
                   title="Open project"
                   onClick={() => r.projectUrl && void openUrl(r.projectUrl)}
                   disabled={!r.projectUrl}
@@ -440,7 +452,7 @@ function CreditsPage(props: { onBack: () => void }) {
                   {p.repository ? (
                     <button
                       type="button"
-                      className="btn ghost sm"
+                      className="btn ghost sm soft-ring-btn"
                       title={p.repository}
                       onClick={() => void openUrl(p.repository)}
                     >
@@ -493,7 +505,7 @@ function CreditsPage(props: { onBack: () => void }) {
                   {c.repository ? (
                     <button
                       type="button"
-                      className="btn ghost sm"
+                      className="btn ghost sm soft-ring-btn"
                       title={c.repository}
                       onClick={() => void openUrl(c.repository)}
                     >
