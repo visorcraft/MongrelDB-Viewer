@@ -62,7 +62,7 @@ MongrelDB has 30+ language bindings. For a Tauri desktop viewer the **best fit i
 | **Schema Constellation** | Living graph of tables → columns → six index kinds |
 | **Table Inspector** | Columns, flags, **index radar** (Bitmap / PGM / FM / ANN / Sparse / MinHash) |
 | **SQL Console** | DataFusion 54 SQL, DDL/DML, scored search functions |
-| **Dense ANN Lab** | Install 384-d HNSW (default **dense** f32 cosine, optional BinarySign; MiniLM embed), semantic search + exact rerank |
+| **Dense ANN Lab** | Install 384-d ANN (HNSW / DiskANN / IVF × dense / BinarySign / product PQ; MiniLM embed), semantic search + exact rerank |
 | **Agent Nexus** | OpenAI-compatible chat with tool-calling against the open DB |
 | **MCP Bridge** | HTTP JSON-RPC MCP server (and `--mcp-stdio`) for terminal/IDE clients |
 
@@ -73,7 +73,7 @@ MCP and in-app chat are **not exclusive** - both can use the same open database 
 - Rust **1.88+** (MongrelDB rust-version)
 - Node.js **22+**
 
-MongrelDB is pulled from crates.io (`mongreldb-core` / `mongreldb-query` **0.62.0** - latest release). No engine source checkout required.
+MongrelDB is pulled from crates.io (`mongreldb-core` / `mongreldb-query` / `mongreldb-client` **0.63.1** - latest release). No engine source checkout required. MongrelDB Kit is **not** a direct dependency of the Viewer (low-level core/query/client APIs); server schema inspection uses `mongreldb-client`'s kit HTTP surface.
 
 Linux also needs typical Tauri system libs (`webkit2gtk`, `libayatana-appindicator`, etc.). See [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/).
 
@@ -144,7 +144,7 @@ From **ANN Lab**:
 1. Pick a table  
 2. Optionally set a text column to backfill  
 3. **Enable 384-d ANN + embed with MiniLM**  
-4. Run semantic search (HNSW candidates + exact cosine rerank when available)  
+4. Run semantic search (ANN candidates + exact cosine rerank when available)  
 
 You can also configure a **remote OpenAI-compatible embeddings** endpoint from the agent/settings path (provider id `viewer-remote` style) - any model/dimension the remote returns is accepted as long as it matches the column.
 
@@ -195,8 +195,9 @@ src-tauri/
 Engine crates (crates.io):
 
 ```toml
-mongreldb-core  = "0.62.0"
-mongreldb-query = "0.62.0"
+mongreldb-core   = "0.63.1"
+mongreldb-query  = "0.63.1"
+mongreldb-client = "0.63.1"
 ```
 
 ## License

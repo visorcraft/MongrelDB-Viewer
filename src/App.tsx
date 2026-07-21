@@ -146,8 +146,24 @@ function prettyQuantization(q: string | undefined | null): string {
       return "Dense f32 cosine";
     case "binary_sign":
       return "BinarySign (Hamming)";
+    case "product":
+      return "Product quantization";
     default:
-      return q;
+      return q.startsWith("product") ? q : q;
+  }
+}
+
+function prettyAlgorithm(a: string | undefined | null): string {
+  if (!a) return "HNSW";
+  switch (a.toLowerCase()) {
+    case "diskann":
+      return "DiskANN";
+    case "ivf":
+      return "IVF";
+    case "hnsw":
+      return "HNSW";
+    default:
+      return a;
   }
 }
 
@@ -189,7 +205,11 @@ export default function App() {
   const [annK, setAnnK] = useState(3);
   const [annMinScore, setAnnMinScore] = useState(0.25);
   /** dense = full f32 cosine (default); binary_sign = legacy compact Hamming. */
-  const [annQuantization, setAnnQuantization] = useState<"dense" | "binary_sign">("dense");
+  const [annQuantization, setAnnQuantization] = useState<
+    "dense" | "binary_sign" | "product"
+  >("dense");
+  const [annAlgorithm, setAnnAlgorithm] = useState<"hnsw" | "diskann" | "ivf">("hnsw");
+  const [annProductSubvectors, setAnnProductSubvectors] = useState(48);
   const [annResult, setAnnResult] = useState<SqlResult | null>(null);
   const [modelsNote, setModelsNote] = useState("");
 
@@ -627,7 +647,7 @@ export default function App() {
       // (unless re-embed or rebuild).
       if (tableMeta?.hasAnn && !opts?.reembed && !rebuild) {
         setOk(
-          `ANN already active on ${table} (${tableMeta.embeddingDims[0] ?? 384}-d). Persists with the database. Use Rebuild to change quantization.`,
+          `ANN already active on ${table} (${tableMeta.embeddingDims[0] ?? 384}-d). Persists with the database. Use Rebuild to change algorithm/quantization.`,
         );
         return;
       }
@@ -653,6 +673,26 @@ export default function App() {
       if (willEmbed) {
         await ensureLocalEmbeddings();
       }
+      // Supported pairs: hnsw×{dense,binary_sign,product}, diskann×dense, ivf×dense.
+      const pairOk =
+        (annAlgorithm === "hnsw" &&
+          (annQuantization === "dense" ||
+            annQuantization === "binary_sign" ||
+            annQuantization === "product")) ||
+        ((annAlgorithm === "diskann" || annAlgorithm === "ivf") &&
+          annQuantization === "dense");
+      if (!pairOk) {
+        setError(
+          `Unsupported pair ${annAlgorithm} × ${annQuantization}. Use hnsw×{dense,binary_sign,product}, diskann×dense, or ivf×dense.`,
+        );
+        return;
+      }
+      if (annQuantization === "product" && (384 % annProductSubvectors !== 0 || annProductSubvectors < 1)) {
+        setError(
+          `Product num_subvectors (${annProductSubvectors}) must evenly divide dimension 384.`,
+        );
+        return;
+      }
       const res = await installDenseAnn({
         table,
         embeddingColumn: "embedding",
@@ -660,7 +700,11 @@ export default function App() {
         // Re-embed when: first install, explicit re-embed, or rebuild with a text col selected.
         sourceTextColumn: willEmbed ? textCol || undefined : undefined,
         backfillLimit: 5000,
+        algorithm: annAlgorithm,
         quantization: annQuantization,
+        productNumSubvectors:
+          annQuantization === "product" ? annProductSubvectors : undefined,
+        productBits: annQuantization === "product" ? 8 : undefined,
         rebuild,
       });
       setOk(res.message);
@@ -1142,6 +1186,10 @@ export default function App() {
                     setAnnMinScore={setAnnMinScore}
                     annQuantization={annQuantization}
                     setAnnQuantization={setAnnQuantization}
+                    annAlgorithm={annAlgorithm}
+                    setAnnAlgorithm={setAnnAlgorithm}
+                    annProductSubvectors={annProductSubvectors}
+                    setAnnProductSubvectors={setAnnProductSubvectors}
                     onInstallAnn={onInstallAnn}
                     onSemantic={onSemantic}
                     result={annResult}
@@ -1609,7 +1657,7 @@ function Deck({
                           </span>
                         )}
                         {t.hasAnn && (
-                          <span className="chip ann" title="HNSW ANN">
+                          <span className="chip ann" title="ANN index">
                             ANN
                           </span>
                         )}
@@ -1853,8 +1901,12 @@ function AnnView(props: {
   setAnnK: (v: number) => void;
   annMinScore: number;
   setAnnMinScore: (v: number) => void;
-  annQuantization: "dense" | "binary_sign";
-  setAnnQuantization: (v: "dense" | "binary_sign") => void;
+  annQuantization: "dense" | "binary_sign" | "product";
+  setAnnQuantization: (v: "dense" | "binary_sign" | "product") => void;
+  annAlgorithm: "hnsw" | "diskann" | "ivf";
+  setAnnAlgorithm: (v: "hnsw" | "diskann" | "ivf") => void;
+  annProductSubvectors: number;
+  setAnnProductSubvectors: (v: number) => void;
   onInstallAnn: (opts?: { reembed?: boolean; rebuild?: boolean }) => void;
   onSemantic: () => void;
   result: SqlResult | null;
@@ -1866,6 +1918,7 @@ function AnnView(props: {
   const embDim = selected?.embeddingDims?.[0] ?? 384;
   const activeAnn = annIndexOn(props.annTableDetail);
   const activeQuant = activeAnn?.ann?.quantization;
+  const activeAlgo = activeAnn?.ann?.algorithm ?? "hnsw";
   const textCols = textColumnOptions(props.annTableDetail?.columns ?? []);
   const hasTextSource = textCols.length > 0;
   const textColValid = !!props.annTextCol && textCols.some((c) => c.name === props.annTextCol);
@@ -1878,16 +1931,11 @@ function AnnView(props: {
   // Rebuild does not require a text column (index-only); re-embed is optional if selected.
   const canRebuild = !props.busy && !isServer && annReady && schemaLoaded;
   const canSearch = !props.busy && annReady;
-  const installLabel =
-    props.annQuantization === "binary_sign"
-      ? "Enable 384-d BinarySign ANN + embed with MiniLM"
-      : "Enable 384-d Dense ANN + embed with MiniLM";
-  const rebuildLabel =
-    props.annQuantization === "binary_sign"
-      ? "Rebuild as BinarySign ANN"
-      : "Rebuild as Dense ANN";
+  const installLabel = `Enable 384-d ${prettyAlgorithm(props.annAlgorithm)} ${prettyQuantization(props.annQuantization)} + embed with MiniLM`;
+  const rebuildLabel = `Rebuild as ${prettyAlgorithm(props.annAlgorithm)} ${prettyQuantization(props.annQuantization)}`;
   const quantChanging =
-    !!activeQuant && activeQuant !== props.annQuantization;
+    !!activeQuant &&
+    (activeQuant !== props.annQuantization || activeAlgo !== props.annAlgorithm);
 
   let enableBlockedReason: string | null = null;
   if (isServer) {
@@ -1940,7 +1988,8 @@ function AnnView(props: {
             {annReady ? (
               <div className="ann-status ready" role="status">
                 <div className="ann-status-title">
-                  {prettyQuantization(activeQuant)} · {embDim}-d HNSW
+                  {prettyAlgorithm(activeAlgo)} · {prettyQuantization(activeQuant)} ·{" "}
+                  {embDim}-d
                 </div>
                 <p className="ann-status-body">
                   {activeAnn?.optionsSummary
@@ -1950,7 +1999,9 @@ function AnnView(props: {
                   the app and reopen the same path. Search on the right is ready.
                   {activeQuant === "binary_sign"
                     ? " BinarySign uses Hamming prefilter; exact cosine rerank still applies when enabled."
-                    : " Dense stores full f32 vectors with cosine distance in the graph."}
+                    : activeQuant === "product"
+                      ? " Product stores PQ codes (ADC distance); optional reconstructed-vector rerank at the engine."
+                      : " Dense stores full f32 vectors with cosine distance."}
                 </p>
               </div>
             ) : enableBlockedReason && !isServer ? (
@@ -1961,10 +2012,41 @@ function AnnView(props: {
             ) : null}
 
             <div className="field">
+              <label htmlFor="ann-algo">Algorithm</label>
+              <span className="field-hint">
+                HNSW is the default graph. DiskANN (Vamana) and IVF need Dense
+                quantization. Product PQ keeps algorithm=HNSW as its compatibility
+                selector.
+                {annReady
+                  ? " Changing algorithm requires Rebuild (drop + create index)."
+                  : null}
+              </span>
+              <select
+                id="ann-algo"
+                className="control"
+                value={props.annAlgorithm}
+                onChange={(e) => {
+                  const next = e.target.value as "hnsw" | "diskann" | "ivf";
+                  props.setAnnAlgorithm(next);
+                  // DiskANN/IVF only support dense — coerce quantization.
+                  if (next !== "hnsw" && props.annQuantization !== "dense") {
+                    props.setAnnQuantization("dense");
+                  }
+                }}
+                disabled={isServer}
+              >
+                <option value="hnsw">HNSW (default)</option>
+                <option value="diskann">DiskANN / Vamana</option>
+                <option value="ivf">IVF</option>
+              </select>
+            </div>
+
+            <div className="field">
               <label htmlFor="ann-quant">Quantization</label>
               <span className="field-hint">
                 Dense is full f32 cosine (recommended). BinarySign is the legacy
-                compact Hamming path.
+                compact Hamming path (HNSW only). Product is PQ codes (HNSW
+                selector; requires num_subvectors dividing dim).
                 {annReady
                   ? " Changing this requires Rebuild (drop + create index)."
                   : null}
@@ -1974,14 +2056,44 @@ function AnnView(props: {
                 className="control"
                 value={props.annQuantization}
                 onChange={(e) =>
-                  props.setAnnQuantization(e.target.value as "dense" | "binary_sign")
+                  props.setAnnQuantization(
+                    e.target.value as "dense" | "binary_sign" | "product",
+                  )
                 }
                 disabled={isServer}
               >
                 <option value="dense">Dense · f32 cosine (default)</option>
-                <option value="binary_sign">BinarySign · compact Hamming (advanced)</option>
+                <option value="binary_sign" disabled={props.annAlgorithm !== "hnsw"}>
+                  BinarySign · compact Hamming (HNSW only)
+                </option>
+                <option value="product" disabled={props.annAlgorithm !== "hnsw"}>
+                  Product · PQ codes (HNSW selector)
+                </option>
               </select>
             </div>
+
+            {props.annQuantization === "product" && (
+              <div className="field">
+                <label htmlFor="ann-pq-sub">Product num_subvectors</label>
+                <span className="field-hint">
+                  Must evenly divide dimension {embDim} (e.g. 48 for MiniLM 384-d).
+                </span>
+                <input
+                  id="ann-pq-sub"
+                  className="control"
+                  type="number"
+                  min={1}
+                  max={embDim}
+                  value={props.annProductSubvectors}
+                  onChange={(e) =>
+                    props.setAnnProductSubvectors(
+                      Math.max(1, Math.floor(Number(e.target.value) || 1)),
+                    )
+                  }
+                  disabled={isServer}
+                />
+              </div>
+            )}
 
             <div className="field">
               <label htmlFor="ann-text-col">Text column</label>
@@ -2033,8 +2145,8 @@ function AnnView(props: {
                     title={
                       canRebuild
                         ? quantChanging
-                          ? `Drop ANN and recreate as ${props.annQuantization}; re-embeds if a text column is selected`
-                          : "Drop ANN and recreate with the selected quantization; re-embeds if a text column is selected"
+                          ? `Drop ANN and recreate as ${props.annAlgorithm} × ${props.annQuantization}; re-embeds if a text column is selected`
+                          : "Drop ANN and recreate with the selected algorithm/quantization; re-embeds if a text column is selected"
                         : "Rebuild needs a direct connection and an existing ANN"
                     }
                   >
@@ -2055,7 +2167,9 @@ function AnnView(props: {
             </div>
             {annReady && quantChanging && (
               <p className="field-hint" style={{ marginTop: 12 }}>
-                Active index is {prettyQuantization(activeQuant)}; rebuild will switch to{" "}
+                Active index is {prettyAlgorithm(activeAlgo)} ×{" "}
+                {prettyQuantization(activeQuant)}; rebuild will switch to{" "}
+                {prettyAlgorithm(props.annAlgorithm)} ×{" "}
                 {prettyQuantization(props.annQuantization)}.
               </p>
             )}
@@ -2130,7 +2244,7 @@ function AnnView(props: {
                     : "Install ANN on this table before searching"
                 }
               >
-                Search (HNSW + exact rerank)
+                Search (ANN + exact rerank)
               </button>
             </div>
             {!annReady && (

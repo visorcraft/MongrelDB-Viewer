@@ -160,7 +160,8 @@ fn idx(name: &str, column_id: u16, kind: IndexKind) -> IndexDef {
     }
 }
 
-/// Dense f32 cosine ANN (0.62+). Does not use BinarySign engine defaults.
+/// Dense f32 cosine HNSW ANN (0.62+; algorithm explicit since 0.63).
+/// Does not use BinarySign engine defaults.
 fn dense_ann_idx(name: &str, column_id: u16) -> IndexDef {
     IndexDef {
         name: name.into(),
@@ -173,6 +174,7 @@ fn dense_ann_idx(name: &str, column_id: u16) -> IndexDef {
                 ef_construction: 64,
                 ef_search: 64,
                 quantization: AnnQuantization::Dense,
+                ..Default::default()
             }),
             ..IndexOptions::default()
         },
@@ -362,7 +364,7 @@ fn seed_demo_schema(db: &Database, with_ann: bool) -> Result<(), mongreldb_core:
             3,
             1,
             2,
-            "Dense ANN is full f32 cosine HNSW; BinarySign is the legacy compact Hamming path.",
+            "ANN algorithms: HNSW, DiskANN, IVF; quantizations: Dense, BinarySign, Product (0.63+).",
             "draft",
             0.88,
         ),

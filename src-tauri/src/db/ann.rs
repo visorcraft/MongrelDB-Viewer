@@ -6,14 +6,16 @@ use crate::embeddings::{EmbeddingHub, DEFAULT_DIM, DEFAULT_PROVIDER_ID};
 use crate::error::{AppError, AppResult};
 use crate::models::{InstallAnnRequest, InstallAnnResult, SemanticSearchRequest, SqlRequest};
 
-/// Install an ANN (HNSW) surface on a table.
+/// Install an ANN surface on a table.
 ///
 /// - Ensures an Embedding column (default dim 384)
-/// - Creates an Ann secondary index via SQL (default **dense** f32 cosine)
+/// - Creates an Ann secondary index via SQL (default **hnsw × dense** f32 cosine)
 /// - Optionally backfills vectors from a text column using the selected provider
 ///
-/// Quantization: `"dense"` (default) is full-precision f32 cosine ANN;
-/// `"binary_sign"` is the legacy compact Hamming path.
+/// MongrelDB 0.63+: algorithm (`hnsw` / `diskann` / `ivf`) is independent of
+/// quantization (`dense` / `binary_sign` / `product`). Supported pairs match
+/// the engine: `hnsw × {binary_sign, dense, product}`, `diskann × dense`,
+/// `ivf × dense`.
 pub async fn install_dense_ann(
     db: &DbSession,
     embeddings: &EmbeddingHub,
@@ -33,7 +35,26 @@ pub async fn install_dense_ann(
         return Err(AppError::msg("dimension must be between 1 and 4096"));
     }
     let quantization = normalize_quantization(req.quantization.as_deref())?;
+    let algorithm = normalize_algorithm(req.algorithm.as_deref())?;
+    validate_ann_pair(algorithm, quantization)?;
+    if quantization == "product" {
+        let nsub = req.product_num_subvectors.ok_or_else(|| {
+            AppError::msg("product quantization requires productNumSubvectors (must divide dimension)")
+        })?;
+        if nsub == 0 || dim % u32::from(nsub) != 0 {
+            return Err(AppError::msg(format!(
+                "productNumSubvectors ({nsub}) must be > 0 and evenly divide dimension ({dim})"
+            )));
+        }
+        let bits = req.product_bits.unwrap_or(8);
+        if bits != 8 {
+            return Err(AppError::msg(
+                "product bitsPerSubvector must be 8 (only value supported by the engine)",
+            ));
+        }
+    }
     let quant_label = quantization_label(quantization);
+    let algo_label = algorithm_label(algorithm);
     let rebuild = req.rebuild.unwrap_or(false);
     let mut index_name = req
         .index_name
@@ -75,6 +96,7 @@ pub async fn install_dense_ann(
     // Already fully installed and no re-embed / rebuild requested - do nothing.
     if has_ann && text_col.is_none() {
         let existing = existing_ann_quantization(db, &table, &emb_col).unwrap_or(quantization);
+        let existing_algo = existing_ann_algorithm(db, &table, &emb_col).unwrap_or(algorithm);
         return Ok(InstallAnnResult {
             table: table.clone(),
             embedding_column: emb_col,
@@ -83,22 +105,18 @@ pub async fn install_dense_ann(
             rows_embedded: 0,
             already_ready: true,
             quantization: existing.to_string(),
+            algorithm: existing_algo.to_string(),
             rebuilt: false,
             message: format!(
-                "{} ANN already active on {table} ({dim}-d, {}). Stored with the database - no install needed. Use rebuild to change quantization.",
+                "{} {} ANN already active on {table} ({dim}-d, quant={existing}). Stored with the database - no install needed. Use rebuild to change algorithm/quantization.",
+                algorithm_label(existing_algo),
                 quantization_label(existing),
-                existing
             ),
         });
     }
 
     if !has_ann {
-        let m = req.m.unwrap_or(16);
-        let efc = req.ef_construction.unwrap_or(64);
-        let efs = req.ef_search.unwrap_or(64);
-        let sql = format!(
-            "CREATE INDEX {index_name} ON {table} USING ann ({emb_col}) WITH (m = {m}, ef_construction = {efc}, ef_search = {efs}, quantization = '{quantization}')"
-        );
+        let sql = build_create_ann_sql(&index_name, &table, &emb_col, algorithm, quantization, &req)?;
         db.session
             .run(&sql)
             .await
@@ -125,19 +143,25 @@ pub async fn install_dense_ann(
     } else {
         quantization
     };
+    let active_algo = if has_ann && !rebuilt {
+        existing_ann_algorithm(db, &table, &emb_col).unwrap_or(algorithm)
+    } else {
+        algorithm
+    };
 
     let message = if rebuilt {
         format!(
-            "Rebuilt {quant_label} ANN on {table} ({dim}-d, quantization={quantization}). Provider={provider_id}. Rows embedded={rows_embedded}."
+            "Rebuilt {algo_label} {quant_label} ANN on {table} ({dim}-d, algorithm={algorithm}, quantization={quantization}). Provider={provider_id}. Rows embedded={rows_embedded}."
         )
     } else if has_ann {
         format!(
-            "{} ANN already active on {table} ({dim}-d, {active_quant}). Re-embedded {rows_embedded} rows via {provider_id}.",
+            "{} {} ANN already active on {table} ({dim}-d, {active_quant}). Re-embedded {rows_embedded} rows via {provider_id}.",
+            algorithm_label(active_algo),
             quantization_label(active_quant)
         )
     } else {
         format!(
-            "{quant_label} ANN ready on {table} ({dim}-d, quantization={quantization}). Provider={provider_id}. Rows embedded={rows_embedded}."
+            "{algo_label} {quant_label} ANN ready on {table} ({dim}-d, algorithm={algorithm}, quantization={quantization}). Provider={provider_id}. Rows embedded={rows_embedded}."
         )
     };
 
@@ -149,9 +173,65 @@ pub async fn install_dense_ann(
         rows_embedded,
         already_ready: has_ann && !rebuilt,
         quantization: active_quant.to_string(),
+        algorithm: active_algo.to_string(),
         rebuilt,
         message,
     })
+}
+
+/// Build `CREATE INDEX … USING ann … WITH (…)` for the requested backend pair.
+fn build_create_ann_sql(
+    index_name: &str,
+    table: &str,
+    emb_col: &str,
+    algorithm: &str,
+    quantization: &str,
+    req: &InstallAnnRequest,
+) -> AppResult<String> {
+    let m = req.m.unwrap_or(16);
+    let efc = req.ef_construction.unwrap_or(64);
+    let efs = req.ef_search.unwrap_or(64);
+    let mut with = vec![
+        format!("m = {m}"),
+        format!("ef_construction = {efc}"),
+        format!("ef_search = {efs}"),
+        format!("algorithm = '{algorithm}'"),
+        format!("quantization = '{quantization}'"),
+    ];
+    match algorithm {
+        "diskann" => {
+            if let Some(r) = req.diskann_r {
+                with.push(format!("diskann_r = {r}"));
+            }
+            if let Some(l) = req.diskann_l {
+                with.push(format!("diskann_l = {l}"));
+            }
+            if let Some(b) = req.diskann_beam_width {
+                with.push(format!("beam_width = {b}"));
+            }
+        }
+        "ivf" => {
+            if let Some(n) = req.ivf_nlist {
+                with.push(format!("nlist = {n}"));
+            }
+            if let Some(n) = req.ivf_nprobe {
+                with.push(format!("nprobe = {n}"));
+            }
+        }
+        _ => {}
+    }
+    if quantization == "product" {
+        let nsub = req.product_num_subvectors.ok_or_else(|| {
+            AppError::msg("product quantization requires productNumSubvectors")
+        })?;
+        let bits = req.product_bits.unwrap_or(8);
+        with.push(format!("num_subvectors = {nsub}"));
+        with.push(format!("bits_per_subvector = {bits}"));
+    }
+    Ok(format!(
+        "CREATE INDEX {index_name} ON {table} USING ann ({emb_col}) WITH ({})",
+        with.join(", ")
+    ))
 }
 
 /// Normalize user/API quantization to engine SQL literals.
@@ -161,17 +241,61 @@ fn normalize_quantization(raw: Option<&str>) -> AppResult<&'static str> {
         Some(s) => match s.to_ascii_lowercase().as_str() {
             "dense" => Ok("dense"),
             "binary_sign" | "binary-sign" | "binary" | "hamming" => Ok("binary_sign"),
+            "product" | "pq" => Ok("product"),
             other => Err(AppError::msg(format!(
-                "quantization must be 'dense' or 'binary_sign', got {other:?}"
+                "quantization must be 'dense', 'binary_sign', or 'product', got {other:?}"
             ))),
         },
+    }
+}
+
+fn normalize_algorithm(raw: Option<&str>) -> AppResult<&'static str> {
+    match raw.map(str::trim).filter(|s| !s.is_empty()) {
+        None => Ok("hnsw"),
+        Some(s) => match s.to_ascii_lowercase().as_str() {
+            "hnsw" => Ok("hnsw"),
+            "diskann" | "disk-ann" | "vamana" => Ok("diskann"),
+            "ivf" => Ok("ivf"),
+            other => Err(AppError::msg(format!(
+                "algorithm must be 'hnsw', 'diskann', or 'ivf', got {other:?}"
+            ))),
+        },
+    }
+}
+
+/// Engine-supported algorithm × quantization pairs (0.63+).
+fn validate_ann_pair(algorithm: &str, quantization: &str) -> AppResult<()> {
+    let ok = matches!(
+        (algorithm, quantization),
+        ("hnsw", "binary_sign")
+            | ("hnsw", "dense")
+            | ("hnsw", "product")
+            | ("diskann", "dense")
+            | ("ivf", "dense")
+    );
+    if ok {
+        Ok(())
+    } else {
+        Err(AppError::msg(format!(
+            "unsupported ANN pair algorithm={algorithm:?} quantization={quantization:?}; \
+             supported: hnsw×{{binary_sign,dense,product}}, diskann×dense, ivf×dense"
+        )))
     }
 }
 
 fn quantization_label(q: &str) -> &'static str {
     match q {
         "binary_sign" => "BinarySign",
+        "product" => "Product",
         _ => "Dense",
+    }
+}
+
+fn algorithm_label(a: &str) -> &'static str {
+    match a {
+        "diskann" => "DiskANN",
+        "ivf" => "IVF",
+        _ => "HNSW",
     }
 }
 
@@ -184,9 +308,27 @@ fn existing_ann_quantization(db: &DbSession, table: &str, emb_col: &str) -> Opti
         .indexes
         .iter()
         .find(|idx| idx.kind == IndexKind::Ann && idx.column_id == emb_id)?;
-    match idx.options.ann.as_ref().map(|o| o.quantization) {
+    match idx.options.ann.as_ref().map(|o| &o.quantization) {
         Some(mongreldb_core::schema::AnnQuantization::Dense) => Some("dense"),
+        Some(mongreldb_core::schema::AnnQuantization::Product { .. }) => Some("product"),
         Some(mongreldb_core::schema::AnnQuantization::BinarySign) | None => Some("binary_sign"),
+    }
+}
+
+fn existing_ann_algorithm(db: &DbSession, table: &str, emb_col: &str) -> Option<&'static str> {
+    use mongreldb_core::schema::AnnAlgorithm;
+    let handle = db.database.table(table).ok()?;
+    let guard = handle.lock();
+    let schema = guard.schema();
+    let emb_id = schema.columns.iter().find(|c| c.name == emb_col)?.id;
+    let idx = schema
+        .indexes
+        .iter()
+        .find(|idx| idx.kind == IndexKind::Ann && idx.column_id == emb_id)?;
+    match idx.options.ann.as_ref().map(|o| o.algorithm) {
+        Some(AnnAlgorithm::DiskAnn) => Some("diskann"),
+        Some(AnnAlgorithm::Ivf) => Some("ivf"),
+        Some(AnnAlgorithm::Hnsw) | None => Some("hnsw"),
     }
 }
 

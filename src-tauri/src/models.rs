@@ -71,15 +71,41 @@ pub struct ColumnInfo {
     pub embedding_source: Option<String>,
 }
 
-/// ANN HNSW options from schema (`IndexDef.options.ann`).
+/// ANN options from schema (`IndexDef.options.ann`).
+///
+/// MongrelDB 0.63+ separates **algorithm** (hnsw / diskann / ivf) from
+/// **quantization** (binary_sign / dense / product). Supported pairs:
+/// `hnsw × {binary_sign, dense, product}`, `diskann × dense`, `ivf × dense`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AnnIndexOptions {
     pub m: usize,
     pub ef_construction: usize,
     pub ef_search: usize,
-    /// `"dense"` (full f32 cosine) or `"binary_sign"` (legacy Hamming).
+    /// `"dense"`, `"binary_sign"`, or `"product"` (optionally with params).
     pub quantization: String,
+    /// `"hnsw"` (default), `"diskann"`, or `"ivf"`.
+    #[serde(default = "default_ann_algorithm")]
+    pub algorithm: String,
+    /// Product-quantization subvector count when quantization is product.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub product_num_subvectors: Option<u16>,
+    /// Product-quantization bits per subvector (engine supports 8).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub product_bits: Option<u8>,
+    /// DiskANN degree `R` when algorithm is diskann.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub diskann_r: Option<usize>,
+    /// IVF `nlist` when algorithm is ivf.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ivf_nlist: Option<usize>,
+    /// IVF `nprobe` when algorithm is ivf.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ivf_nprobe: Option<usize>,
+}
+
+fn default_ann_algorithm() -> String {
+    "hnsw".into()
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -192,10 +218,27 @@ pub struct InstallAnnRequest {
     pub ef_construction: Option<usize>,
     pub ef_search: Option<usize>,
     pub backfill_limit: Option<usize>,
-    /// `"dense"` (default, full f32 cosine) or `"binary_sign"` (legacy compact).
+    /// `"dense"` (default, full f32 cosine), `"binary_sign"` (legacy compact),
+    /// or `"product"` (PQ codes; requires `product_num_subvectors`).
     pub quantization: Option<String>,
+    /// ANN algorithm: `"hnsw"` (default), `"diskann"`, or `"ivf"`.
+    pub algorithm: Option<String>,
+    /// Required when `quantization = "product"`; must evenly divide dimension.
+    pub product_num_subvectors: Option<u16>,
+    /// Product bits per subvector (default 8; only 8 is supported today).
+    pub product_bits: Option<u8>,
+    /// DiskANN max degree `R` (engine default 64).
+    pub diskann_r: Option<usize>,
+    /// DiskANN build search-list size `L` (engine default 128).
+    pub diskann_l: Option<usize>,
+    /// DiskANN query beam width (engine default 8).
+    pub diskann_beam_width: Option<usize>,
+    /// IVF inverted-list count (engine default 256).
+    pub ivf_nlist: Option<usize>,
+    /// IVF lists probed at query time (engine default 8).
+    pub ivf_nprobe: Option<usize>,
     /// Drop existing ANN on the embedding column and recreate with the requested
-    /// options (quantization / m / ef_*). Use to upgrade BinarySign → Dense.
+    /// options (algorithm / quantization / m / ef_*). Use to change backends.
     #[serde(default)]
     pub rebuild: Option<bool>,
 }
@@ -212,9 +255,12 @@ pub struct InstallAnnResult {
     /// True when the table already had an ANN index and no rebuild/DDL was needed.
     #[serde(default)]
     pub already_ready: bool,
-    /// Quantization used for the index (`dense` or `binary_sign`).
+    /// Quantization used for the index (`dense`, `binary_sign`, or `product`).
     #[serde(default)]
     pub quantization: String,
+    /// Algorithm used for the index (`hnsw`, `diskann`, or `ivf`).
+    #[serde(default = "default_ann_algorithm")]
+    pub algorithm: String,
     /// True when an existing ANN index was dropped and recreated.
     #[serde(default)]
     pub rebuilt: bool,

@@ -52,7 +52,7 @@ From the Table inspector:
 Also available from the command palette under **Maintenance**.
 
 This is **index maintenance**, not ANN rebuild. To change ANN quantization
-(e.g. BinarySign → Dense), use **Rebuild ANN** on the Vector search tab.
+(e.g. BinarySign → Dense, HNSW → DiskANN), use **Rebuild ANN** on the Vector search tab.
 
 ## Tips
 

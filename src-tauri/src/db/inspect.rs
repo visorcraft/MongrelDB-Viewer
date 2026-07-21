@@ -404,28 +404,69 @@ pub fn index_info_from_parts(
     }
 }
 
-/// ANN options from schema, or engine defaults when omitted (BinarySign).
+/// ANN options from schema, or engine defaults when omitted (HNSW + BinarySign).
 fn ann_options_info(options: &IndexOptions) -> AnnIndexOptions {
     match options.ann.as_ref() {
-        Some(ann) => AnnIndexOptions {
-            m: ann.m,
-            ef_construction: ann.ef_construction,
-            ef_search: ann.ef_search,
-            quantization: quantization_name(ann.quantization).into(),
-        },
+        Some(ann) => {
+            let (quantization, product_num_subvectors, product_bits) =
+                quantization_parts(ann.quantization);
+            AnnIndexOptions {
+                m: ann.m,
+                ef_construction: ann.ef_construction,
+                ef_search: ann.ef_search,
+                quantization,
+                algorithm: algorithm_name(ann.algorithm).into(),
+                product_num_subvectors,
+                product_bits,
+                diskann_r: ann.diskann.as_ref().map(|d| d.r),
+                ivf_nlist: ann.ivf.as_ref().map(|i| i.nlist),
+                ivf_nprobe: ann.ivf.as_ref().map(|i| i.nprobe),
+            }
+        }
         None => AnnIndexOptions {
             m: 16,
             ef_construction: 64,
             ef_search: 64,
             quantization: "binary_sign".into(),
+            algorithm: "hnsw".into(),
+            product_num_subvectors: None,
+            product_bits: None,
+            diskann_r: None,
+            ivf_nlist: None,
+            ivf_nprobe: None,
         },
     }
 }
 
-fn quantization_name(q: AnnQuantization) -> &'static str {
+fn algorithm_name(a: mongreldb_core::schema::AnnAlgorithm) -> &'static str {
+    use mongreldb_core::schema::AnnAlgorithm;
+    match a {
+        AnnAlgorithm::Hnsw => "hnsw",
+        AnnAlgorithm::DiskAnn => "diskann",
+        AnnAlgorithm::Ivf => "ivf",
+    }
+}
+
+/// Return display label plus optional product params.
+fn quantization_parts(q: AnnQuantization) -> (String, Option<u16>, Option<u8>) {
     match q {
-        AnnQuantization::Dense => "dense",
-        AnnQuantization::BinarySign => "binary_sign",
+        AnnQuantization::Dense => ("dense".into(), None, None),
+        AnnQuantization::BinarySign => ("binary_sign".into(), None, None),
+        AnnQuantization::Product {
+            num_subvectors,
+            bits,
+        } => ("product".into(), Some(num_subvectors), Some(bits)),
+    }
+}
+
+fn quantization_label(q: AnnQuantization) -> String {
+    match q {
+        AnnQuantization::Dense => "dense".into(),
+        AnnQuantization::BinarySign => "binary_sign".into(),
+        AnnQuantization::Product {
+            num_subvectors,
+            bits,
+        } => format!("product({num_subvectors}×{bits}b)"),
     }
 }
 
@@ -433,16 +474,26 @@ fn options_summary_for(kind: &str, options: &IndexOptions) -> Option<String> {
     let k = kind.to_ascii_lowercase();
     if k.contains("ann") {
         if let Some(ann) = &options.ann {
-            return Some(format!(
-                "{} · m={} · efc={} · efs={}",
-                quantization_name(ann.quantization),
-                ann.m,
-                ann.ef_construction,
-                ann.ef_search
-            ));
+            let mut parts = vec![
+                algorithm_name(ann.algorithm).to_string(),
+                quantization_label(ann.quantization),
+                format!("m={}", ann.m),
+                format!("efc={}", ann.ef_construction),
+                format!("efs={}", ann.ef_search),
+            ];
+            if let Some(d) = &ann.diskann {
+                parts.push(format!("R={}", d.r));
+                parts.push(format!("L={}", d.l));
+                parts.push(format!("beam={}", d.beam_width));
+            }
+            if let Some(i) = &ann.ivf {
+                parts.push(format!("nlist={}", i.nlist));
+                parts.push(format!("nprobe={}", i.nprobe));
+            }
+            return Some(parts.join(" · "));
         }
-        // Schema omitted options → engine default is BinarySign.
-        return Some("binary_sign (default)".into());
+        // Schema omitted options → engine default is HNSW + BinarySign.
+        return Some("hnsw · binary_sign (default)".into());
     }
     if k.contains("minhash") {
         if let Some(mh) = &options.minhash {

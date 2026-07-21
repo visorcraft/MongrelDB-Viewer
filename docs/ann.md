@@ -1,7 +1,7 @@
 # Vector search (ANN)
 
-**ANN** installs HNSW indexes and runs **semantic search** on a single table.
-It does **not** search the entire database.
+**ANN** installs approximate nearest-neighbor indexes and runs **semantic search**
+on a single table. It does **not** search the entire database.
 
 ## Scope
 
@@ -12,31 +12,55 @@ It does **not** search the entire database.
 
 Pick the table in the **Table** dropdown before install or search.
 
-## Quantization (Dense vs BinarySign)
+## Algorithm × quantization (MongrelDB 0.63+)
 
-MongrelDB 0.62+ exposes two ANN quantizations (algorithm is always **HNSW**):
+Algorithm (graph/structure) and quantization (vector representation) are
+**separate** schema fields. Only these pairs are supported:
 
-| Value | Meaning |
-| ----- | ------- |
-| **`dense`** (default) | Full f32 vectors with cosine distance in the graph |
-| **`binary_sign`** | Legacy compact Hamming / sign-bit path |
+| Algorithm | Quantizations |
+| --------- | ------------- |
+| **`hnsw`** (default) | `dense`, `binary_sign`, `product` |
+| **`diskann`** (Vamana) | `dense` |
+| **`ivf`** | `dense` |
 
-The install UI defaults to **Dense**. Choose **BinarySign** only as an advanced
-option when you want the compact representation.
+| Quantization | Meaning |
+| ------------ | ------- |
+| **`dense`** (default in Viewer) | Full f32 vectors with cosine distance |
+| **`binary_sign`** | Legacy compact Hamming / sign-bit path (HNSW only) |
+| **`product`** | Product quantization (PQ codes, ADC distance). Requires `num_subvectors` that evenly divides the column dimension. Product keeps `algorithm = 'hnsw'` as its compatibility selector while executing on a flat PQ backend. |
 
-SQL equivalent:
+The install UI defaults to **HNSW × Dense**. DiskANN/IVF coerce quantization to
+Dense. Product needs a `num_subvectors` value (e.g. **48** for MiniLM 384-d).
+
+SQL examples:
 
 ```sql
+-- HNSW dense (Viewer default)
 CREATE INDEX docs_ann ON documents USING ann (embedding)
-  WITH (m = 16, ef_construction = 64, ef_search = 64, quantization = 'dense');
+  WITH (m = 16, ef_construction = 64, ef_search = 64,
+        algorithm = 'hnsw', quantization = 'dense');
+
+-- DiskANN dense
+CREATE INDEX docs_ann ON documents USING ann (embedding)
+  WITH (algorithm = 'diskann', quantization = 'dense',
+        diskann_r = 64, diskann_l = 128, beam_width = 8);
+
+-- IVF dense
+CREATE INDEX docs_ann ON documents USING ann (embedding)
+  WITH (algorithm = 'ivf', quantization = 'dense', nlist = 256, nprobe = 8);
+
+-- Product quantization (HNSW selector)
+CREATE INDEX docs_ann ON documents USING ann (embedding)
+  WITH (algorithm = 'hnsw', quantization = 'product',
+        num_subvectors = 48, bits_per_subvector = 8);
 ```
 
-Use `quantization = 'binary_sign'` for the legacy path. Omitting quantization
-on older engines defaulted to BinarySign — Viewer always sends an explicit value.
+Omitting quantization on older engines defaulted to BinarySign — Viewer always
+sends explicit `algorithm` and `quantization`.
 
 ## Eligibility (Enable)
 
-**Enable 384-d Dense ANN + embed with MiniLM** is available only when:
+**Enable 384-d … + embed with MiniLM** is available only when:
 
 - Connection mode is **Direct** (not server)  
 - Table schema has loaded  
@@ -52,21 +76,23 @@ Tables already showing **vector ready** / **Active** do not re-offer Enable;
 use:
 
 - **Re-embed from text column** — rewrite vectors only (same index).  
-- **Rebuild as Dense/BinarySign ANN** — `DROP INDEX` + `CREATE INDEX` with the
-  selected quantization (and re-embed if a text column is selected). Use this to
-  upgrade a legacy BinarySign index to Dense.
+- **Rebuild as … ANN** — `DROP INDEX` + `CREATE INDEX` with the selected
+  algorithm/quantization (and re-embed if a text column is selected). Use this to
+  change backends (e.g. BinarySign → Dense, HNSW → DiskANN).
 
-Active status shows the stored quantization, `m`, `ef_construction`, and
-`ef_search`.
+Active status shows algorithm, quantization, `m`, `ef_construction`, `ef_search`,
+and backend-specific knobs (DiskANN R/L/beam, IVF nlist/nprobe, PQ subvectors).
 
 ## Install flow
 
 1. Choose a table.  
-2. Choose **quantization** (Dense recommended).  
-3. Choose a **text column** that actually exists (e.g. `body` on documents,
+2. Choose **algorithm** (HNSW recommended).  
+3. Choose **quantization** (Dense recommended).  
+4. For Product, set **num_subvectors** (must divide dimension).  
+5. Choose a **text column** that actually exists (e.g. `body` on documents,
    `payload` or `kind` on events).  
-4. Click **Enable 384-d … ANN + embed with MiniLM**.  
-5. Wait for local MiniLM load (first run may download the model into the user
+6. Click **Enable 384-d … + embed with MiniLM**.  
+7. Wait for local MiniLM load (first run may download the model into the user
    cache).  
 
 Default dimension is **384** (`all-MiniLM-L6-v2`). Application-supplied vectors
@@ -77,13 +103,14 @@ are written into the embedding column after MiniLM runs in-process.
 1. Ensure the table is vector ready.  
 2. Enter a natural-language **query**.  
 3. Set **k** (max hits) and optional **min cosine score** (0 = off).  
-4. Click **Search (HNSW + exact rerank)**.  
+4. Click **Search (ANN + exact rerank)**.  
 
 The engine path prefers exact cosine rerank (`ann_search_exact`) and can fall
 back to `ann_search` when needed. Hits may include score columns such as
-`exact_score` and `search_rank`. On **Dense** indexes the graph itself uses
-cosine distance; on **BinarySign** HNSW prefilters with Hamming and exact
-rerank restores cosine order.
+`exact_score` and `search_rank`. On **Dense** indexes the graph uses cosine
+distance; on **BinarySign** HNSW prefilters with Hamming and exact rerank
+restores cosine order; **Product** reports ADC distance (with optional engine
+reconstructed-vector rerank).
 
 ### Interpreting results
 
@@ -96,7 +123,8 @@ rerank restores cosine order.
 
 Table view and constellation show:
 
-- ANN options: quantization, `m`, `ef_construction`, `ef_search`  
+- ANN options: algorithm, quantization, `m`, `ef_construction`, `ef_search`,
+  and backend-specific fields  
 - Embedding column **source** when the schema records one (`supplied_by_application`,
   `configured_model · provider / model @ version`, etc.)  
 
@@ -104,8 +132,8 @@ Table view and constellation show:
 
 | Action | What it does |
 | ------ | ------------ |
-| **Rebuild ANN** (this tab) | Drops the ANN index and recreates it (optionally re-embeds). Changes quantization. Direct only. |
-| **REINDEX table / all** (Table tab) | Engine maintenance: analyze + compact + GC on one table or the whole DB. Does **not** change ANN quantization. |
+| **Rebuild ANN** (this tab) | Drops the ANN index and recreates it (optionally re-embeds). Changes algorithm/quantization. Direct only. |
+| **REINDEX table / all** (Table tab) | Engine maintenance: analyze + compact + GC on one table or the whole DB. Does **not** change ANN options. |
 
 SQL equivalents:
 
@@ -113,7 +141,8 @@ SQL equivalents:
 -- Rebuild ANN (Viewer also does this via the Rebuild button)
 DROP INDEX docs_ann ON documents;
 CREATE INDEX docs_ann ON documents USING ann (embedding)
-  WITH (m = 16, ef_construction = 64, ef_search = 64, quantization = 'dense');
+  WITH (m = 16, ef_construction = 64, ef_search = 64,
+        algorithm = 'hnsw', quantization = 'dense');
 
 -- Table / database maintenance
 REINDEX documents;
@@ -128,7 +157,7 @@ REINDEX;
 - Server connections: run search if the server already has ANN; install/rebuild
   from Direct or admin SQL. REINDEX may work over server SQL if the daemon
   allows it.  
-- Product quantization and non-HNSW algorithms are **not** implemented in the
-  engine — do not expect other ANN backends here.  
+- Unsupported algorithm × quantization pairs are rejected fail-closed by the
+  engine and by the Viewer.  
 
 Related: [SQL](sql.md) · [Table](table.md) · [Onboarding](onboarding.md)

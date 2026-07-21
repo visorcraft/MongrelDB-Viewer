@@ -56,13 +56,20 @@ export type ColumnInfo = {
   embeddingSource?: string | null;
 };
 
-/** ANN HNSW options from schema. */
+/** ANN options from schema (algorithm × quantization since MongrelDB 0.63). */
 export type AnnIndexOptions = {
   m: number;
   efConstruction: number;
   efSearch: number;
-  /** "dense" (full f32 cosine) or "binary_sign" (legacy Hamming). */
+  /** "dense", "binary_sign", or "product". */
   quantization: string;
+  /** "hnsw" | "diskann" | "ivf" */
+  algorithm?: string;
+  productNumSubvectors?: number | null;
+  productBits?: number | null;
+  diskannR?: number | null;
+  ivfNlist?: number | null;
+  ivfNprobe?: number | null;
 };
 
 export type IndexInfo = {
@@ -147,8 +154,10 @@ export type InstallAnnResult = {
   message: string;
   /** True when the table already had a durable ANN index. */
   alreadyReady?: boolean;
-  /** "dense" or "binary_sign". */
+  /** "dense", "binary_sign", or "product". */
   quantization?: string;
+  /** "hnsw" | "diskann" | "ivf" */
+  algorithm?: string;
   /** True when an existing ANN was dropped and recreated. */
   rebuilt?: boolean;
 };
@@ -252,8 +261,17 @@ export async function installDenseAnn(req: {
   sourceTextColumn?: string;
   providerId?: string;
   backfillLimit?: number;
-  /** "dense" (default) or "binary_sign". */
-  quantization?: "dense" | "binary_sign";
+  /** "dense" (default), "binary_sign", or "product". */
+  quantization?: "dense" | "binary_sign" | "product";
+  /** "hnsw" (default), "diskann", or "ivf". */
+  algorithm?: "hnsw" | "diskann" | "ivf";
+  productNumSubvectors?: number;
+  productBits?: number;
+  diskannR?: number;
+  diskannL?: number;
+  diskannBeamWidth?: number;
+  ivfNlist?: number;
+  ivfNprobe?: number;
   m?: number;
   efConstruction?: number;
   efSearch?: number;

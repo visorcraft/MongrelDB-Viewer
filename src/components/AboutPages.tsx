@@ -18,7 +18,7 @@ const FEATURES = [
   {
     icon: "◎",
     title: "Dense ANN search",
-    body: "Full f32 cosine HNSW (default), optional BinarySign, exact cosine rerank, min-score floor.",
+    body: "HNSW / DiskANN / IVF × Dense / BinarySign / Product PQ (0.63+), exact cosine rerank, min-score floor.",
   },
   {
     icon: "Σ",

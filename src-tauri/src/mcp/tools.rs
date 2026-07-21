@@ -71,7 +71,7 @@ pub fn tool_definitions() -> Vec<Value> {
         ),
         tool(
             "install_dense_ann",
-            "Install ANN (HNSW) on a table (direct/local only). Default quantization is dense (full f32 cosine); pass binary_sign for legacy compact Hamming. Set rebuild=true to drop and recreate an existing ANN (e.g. BinarySign → Dense).",
+            "Install ANN on a table (direct/local only). Default algorithm=hnsw, quantization=dense (full f32 cosine). Supported pairs: hnsw×{dense,binary_sign,product}, diskann×dense, ivf×dense. product requires product_num_subvectors (must divide dimension). Set rebuild=true to drop and recreate.",
             json!({
                 "type": "object",
                 "properties": {
@@ -81,12 +81,32 @@ pub fn tool_definitions() -> Vec<Value> {
                     "source_text_column": { "type": "string" },
                     "provider_id": { "type": "string" },
                     "backfill_limit": { "type": "integer" },
+                    "algorithm": {
+                        "type": "string",
+                        "enum": ["hnsw", "diskann", "ivf"],
+                        "default": "hnsw",
+                        "description": "ANN graph/structure algorithm"
+                    },
                     "quantization": {
                         "type": "string",
-                        "enum": ["dense", "binary_sign"],
+                        "enum": ["dense", "binary_sign", "product"],
                         "default": "dense",
-                        "description": "dense = full f32 cosine ANN; binary_sign = legacy compact Hamming"
+                        "description": "dense = full f32 cosine; binary_sign = legacy compact Hamming; product = PQ codes"
                     },
+                    "product_num_subvectors": {
+                        "type": "integer",
+                        "description": "Required for product quantization; must evenly divide dimension"
+                    },
+                    "product_bits": {
+                        "type": "integer",
+                        "default": 8,
+                        "description": "Bits per PQ subvector (only 8 supported)"
+                    },
+                    "diskann_r": { "type": "integer", "description": "DiskANN max degree R" },
+                    "diskann_l": { "type": "integer", "description": "DiskANN build search-list L" },
+                    "diskann_beam_width": { "type": "integer" },
+                    "ivf_nlist": { "type": "integer" },
+                    "ivf_nprobe": { "type": "integer" },
                     "rebuild": {
                         "type": "boolean",
                         "default": false,
@@ -279,6 +299,35 @@ impl ToolExecutor {
                             .and_then(|v| v.as_u64())
                             .map(|n| n as usize),
                         quantization: opt_str(&arguments, "quantization"),
+                        algorithm: opt_str(&arguments, "algorithm"),
+                        product_num_subvectors: arguments
+                            .get("product_num_subvectors")
+                            .and_then(|v| v.as_u64())
+                            .map(|n| n as u16),
+                        product_bits: arguments
+                            .get("product_bits")
+                            .and_then(|v| v.as_u64())
+                            .map(|n| n as u8),
+                        diskann_r: arguments
+                            .get("diskann_r")
+                            .and_then(|v| v.as_u64())
+                            .map(|n| n as usize),
+                        diskann_l: arguments
+                            .get("diskann_l")
+                            .and_then(|v| v.as_u64())
+                            .map(|n| n as usize),
+                        diskann_beam_width: arguments
+                            .get("diskann_beam_width")
+                            .and_then(|v| v.as_u64())
+                            .map(|n| n as usize),
+                        ivf_nlist: arguments
+                            .get("ivf_nlist")
+                            .and_then(|v| v.as_u64())
+                            .map(|n| n as usize),
+                        ivf_nprobe: arguments
+                            .get("ivf_nprobe")
+                            .and_then(|v| v.as_u64())
+                            .map(|n| n as usize),
                         rebuild: arguments.get("rebuild").and_then(|v| v.as_bool()),
                     },
                 )

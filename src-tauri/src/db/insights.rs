@@ -41,7 +41,7 @@ pub async fn build_insights(conn: &Connection) -> AppResult<DbInsights> {
         title: "Vector-ready".into(),
         value: ann_tables.to_string(),
         detail: if ann_tables > 0 {
-            "HNSW ANN present - try Vector search".into()
+            "ANN index present - try Vector search".into()
         } else {
             "No ANN yet - open Vector search to install".into()
         },
