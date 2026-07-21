@@ -232,6 +232,72 @@ pub async fn install_dense_ann(
     db::install_dense_ann(&direct, &state.embeddings, req).await
 }
 
+/// Engine `REINDEX` / `REINDEX <table>` (analyze + compact + GC).
+#[tauri::command]
+pub async fn reindex_database(
+    state: State<'_, AppState>,
+    req: ReindexRequest,
+) -> AppResult<ReindexResult> {
+    // Prefer direct session; fall back to SQL over the open connection (server).
+    let direct = {
+        let guard = state.db.read();
+        let conn = guard.as_ref().ok_or(AppError::NoDatabase)?;
+        match conn {
+            Connection::Direct(d) => Some(db::DbSession {
+                path: d.path.clone(),
+                database: std::sync::Arc::clone(&d.database),
+                session: std::sync::Arc::clone(&d.session),
+                opened_at: d.opened_at,
+                credentials_required: d.credentials_required,
+            }),
+            Connection::Server(_) => None,
+        }
+    };
+    if let Some(direct) = direct {
+        return db::reindex(&direct, req).await;
+    }
+    let table = req
+        .table
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty());
+    let sql = match table {
+        None => "REINDEX".to_string(),
+        Some(name) => {
+            if !name
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || c == '_')
+            {
+                return Err(AppError::msg(format!(
+                    "invalid table name {name:?}: use letters, digits, and underscore only"
+                )));
+            }
+            format!("REINDEX {name}")
+        }
+    };
+    let target = table.unwrap_or("database").to_string();
+    let work = {
+        let guard = state.db.read();
+        let conn = guard.as_ref().ok_or(AppError::NoDatabase)?;
+        conn.sql_work(SqlRequest {
+            sql,
+            max_rows: Some(1),
+        })?
+    };
+    let started = std::time::Instant::now();
+    work.run().await?;
+    let elapsed_ms = started.elapsed().as_millis() as u64;
+    Ok(ReindexResult {
+        message: if target == "database" {
+            format!("REINDEX completed for the entire database in {elapsed_ms} ms.")
+        } else {
+            format!("REINDEX completed for table `{target}` in {elapsed_ms} ms.")
+        },
+        target,
+        elapsed_ms,
+    })
+}
+
 #[tauri::command]
 pub async fn semantic_search(
     state: State<'_, AppState>,

@@ -42,6 +42,7 @@ pub fn run() {
             commands::get_insights,
             commands::execute_sql,
             commands::install_dense_ann,
+            commands::reindex_database,
             commands::semantic_search,
             commands::ensure_local_embeddings,
             commands::configure_remote_embeddings,

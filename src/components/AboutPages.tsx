@@ -18,7 +18,7 @@ const FEATURES = [
   {
     icon: "◎",
     title: "Dense ANN search",
-    body: "HNSW prefilter with optional exact cosine rerank and min-score floor.",
+    body: "Full f32 cosine HNSW (default), optional BinarySign, exact cosine rerank, min-score floor.",
   },
   {
     icon: "Σ",

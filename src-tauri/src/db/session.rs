@@ -3,7 +3,8 @@ use std::sync::Arc;
 
 use mongreldb_core::constraint::{ForeignKey, TableConstraints};
 use mongreldb_core::schema::{
-    ColumnDef, ColumnFlags, IndexDef, IndexKind, IndexOptions, Schema, TypeId,
+    AnnOptions, AnnQuantization, ColumnDef, ColumnFlags, IndexDef, IndexKind, IndexOptions, Schema,
+    TypeId,
 };
 use mongreldb_core::{Database, Value};
 use mongreldb_query::MongrelSession;
@@ -159,6 +160,25 @@ fn idx(name: &str, column_id: u16, kind: IndexKind) -> IndexDef {
     }
 }
 
+/// Dense f32 cosine ANN (0.62+). Does not use BinarySign engine defaults.
+fn dense_ann_idx(name: &str, column_id: u16) -> IndexDef {
+    IndexDef {
+        name: name.into(),
+        column_id,
+        kind: IndexKind::Ann,
+        predicate: None,
+        options: IndexOptions {
+            ann: Some(AnnOptions {
+                m: 16,
+                ef_construction: 64,
+                ef_search: 64,
+                quantization: AnnQuantization::Dense,
+            }),
+            ..IndexOptions::default()
+        },
+    }
+}
+
 fn fk(id: u16, name: &str, columns: Vec<u16>, ref_table: &str, ref_columns: Vec<u16>) -> ForeignKey {
     ForeignKey {
         id,
@@ -240,7 +260,7 @@ fn seed_demo_schema(db: &Database, with_ann: bool) -> Result<(), mongreldb_core:
             TypeId::Embedding { dim: 384 },
             ColumnFlags::empty().with(ColumnFlags::NULLABLE),
         ));
-        doc_indexes.push(idx("docs_ann", 7, IndexKind::Ann));
+        doc_indexes.push(dense_ann_idx("docs_ann", 7));
     }
     db.create_table(
         "documents",
@@ -342,7 +362,7 @@ fn seed_demo_schema(db: &Database, with_ann: bool) -> Result<(), mongreldb_core:
             3,
             1,
             2,
-            "Dense ANN uses binary-quantized HNSW with optional exact cosine/dot/L2 rerank.",
+            "Dense ANN is full f32 cosine HNSW; BinarySign is the legacy compact Hamming path.",
             "draft",
             0.88,
         ),

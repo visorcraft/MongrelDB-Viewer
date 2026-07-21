@@ -6,11 +6,14 @@ use crate::embeddings::{EmbeddingHub, DEFAULT_DIM, DEFAULT_PROVIDER_ID};
 use crate::error::{AppError, AppResult};
 use crate::models::{InstallAnnRequest, InstallAnnResult, SemanticSearchRequest, SqlRequest};
 
-/// Install a dense ANN (HNSW) surface on a table.
+/// Install an ANN (HNSW) surface on a table.
 ///
 /// - Ensures an Embedding column (default dim 384)
-/// - Creates an Ann secondary index via SQL
+/// - Creates an Ann secondary index via SQL (default **dense** f32 cosine)
 /// - Optionally backfills vectors from a text column using the selected provider
+///
+/// Quantization: `"dense"` (default) is full-precision f32 cosine ANN;
+/// `"binary_sign"` is the legacy compact Hamming path.
 pub async fn install_dense_ann(
     db: &DbSession,
     embeddings: &EmbeddingHub,
@@ -29,7 +32,10 @@ pub async fn install_dense_ann(
     if dim == 0 || dim > 4096 {
         return Err(AppError::msg("dimension must be between 1 and 4096"));
     }
-    let index_name = req
+    let quantization = normalize_quantization(req.quantization.as_deref())?;
+    let quant_label = quantization_label(quantization);
+    let rebuild = req.rebuild.unwrap_or(false);
+    let mut index_name = req
         .index_name
         .clone()
         .unwrap_or_else(|| format!("{table}_{emb_col}_ann"));
@@ -44,7 +50,7 @@ pub async fn install_dense_ann(
 
     // Mutate schema synchronously; no awaits while table guards are live.
     // ANN presence is durable in the table schema - survives close/reopen.
-    let has_ann = ensure_embedding_column_and_check_ann(db, &table, &emb_col, dim)?;
+    let mut has_ann = ensure_embedding_column_and_check_ann(db, &table, &emb_col, dim)?;
     let text_col = req
         .source_text_column
         .as_deref()
@@ -52,8 +58,23 @@ pub async fn install_dense_ann(
         .filter(|s| !s.is_empty())
         .map(str::to_string);
 
-    // Already fully installed and no re-embed requested - do nothing.
+    let mut rebuilt = false;
+    if rebuild && has_ann {
+        let existing_name = existing_ann_index_name(db, &table, &emb_col)
+            .unwrap_or_else(|| index_name.clone());
+        index_name = existing_name.clone();
+        let drop_sql = format!("DROP INDEX {existing_name} ON {table}");
+        db.session
+            .run(&drop_sql)
+            .await
+            .map_err(|e| AppError::sql(format!("DROP INDEX failed: {e}")))?;
+        has_ann = false;
+        rebuilt = true;
+    }
+
+    // Already fully installed and no re-embed / rebuild requested - do nothing.
     if has_ann && text_col.is_none() {
+        let existing = existing_ann_quantization(db, &table, &emb_col).unwrap_or(quantization);
         return Ok(InstallAnnResult {
             table: table.clone(),
             embedding_column: emb_col,
@@ -61,8 +82,12 @@ pub async fn install_dense_ann(
             index_name,
             rows_embedded: 0,
             already_ready: true,
+            quantization: existing.to_string(),
+            rebuilt: false,
             message: format!(
-                "Dense ANN already active on {table} ({dim}-d). Stored with the database - no install needed."
+                "{} ANN already active on {table} ({dim}-d, {}). Stored with the database - no install needed. Use rebuild to change quantization.",
+                quantization_label(existing),
+                existing
             ),
         });
     }
@@ -72,7 +97,7 @@ pub async fn install_dense_ann(
         let efc = req.ef_construction.unwrap_or(64);
         let efs = req.ef_search.unwrap_or(64);
         let sql = format!(
-            "CREATE INDEX {index_name} ON {table} USING ann ({emb_col}) WITH (m = {m}, ef_construction = {efc}, ef_search = {efs}, quantization = 'binary_sign')"
+            "CREATE INDEX {index_name} ON {table} USING ann ({emb_col}) WITH (m = {m}, ef_construction = {efc}, ef_search = {efs}, quantization = '{quantization}')"
         );
         db.session
             .run(&sql)
@@ -95,13 +120,24 @@ pub async fn install_dense_ann(
         .await?;
     }
 
-    let message = if has_ann {
+    let active_quant = if has_ann && !rebuilt {
+        existing_ann_quantization(db, &table, &emb_col).unwrap_or(quantization)
+    } else {
+        quantization
+    };
+
+    let message = if rebuilt {
         format!(
-            "Dense ANN already active on {table} ({dim}-d). Re-embedded {rows_embedded} rows via {provider_id}."
+            "Rebuilt {quant_label} ANN on {table} ({dim}-d, quantization={quantization}). Provider={provider_id}. Rows embedded={rows_embedded}."
+        )
+    } else if has_ann {
+        format!(
+            "{} ANN already active on {table} ({dim}-d, {active_quant}). Re-embedded {rows_embedded} rows via {provider_id}.",
+            quantization_label(active_quant)
         )
     } else {
         format!(
-            "Dense ANN ready on {table} ({dim}-d). Provider={provider_id}. Rows embedded={rows_embedded}."
+            "{quant_label} ANN ready on {table} ({dim}-d, quantization={quantization}). Provider={provider_id}. Rows embedded={rows_embedded}."
         )
     };
 
@@ -111,9 +147,59 @@ pub async fn install_dense_ann(
         dimension: dim,
         index_name,
         rows_embedded,
-        already_ready: has_ann,
+        already_ready: has_ann && !rebuilt,
+        quantization: active_quant.to_string(),
+        rebuilt,
         message,
     })
+}
+
+/// Normalize user/API quantization to engine SQL literals.
+fn normalize_quantization(raw: Option<&str>) -> AppResult<&'static str> {
+    match raw.map(str::trim).filter(|s| !s.is_empty()) {
+        None => Ok("dense"),
+        Some(s) => match s.to_ascii_lowercase().as_str() {
+            "dense" => Ok("dense"),
+            "binary_sign" | "binary-sign" | "binary" | "hamming" => Ok("binary_sign"),
+            other => Err(AppError::msg(format!(
+                "quantization must be 'dense' or 'binary_sign', got {other:?}"
+            ))),
+        },
+    }
+}
+
+fn quantization_label(q: &str) -> &'static str {
+    match q {
+        "binary_sign" => "BinarySign",
+        _ => "Dense",
+    }
+}
+
+fn existing_ann_quantization(db: &DbSession, table: &str, emb_col: &str) -> Option<&'static str> {
+    let handle = db.database.table(table).ok()?;
+    let guard = handle.lock();
+    let schema = guard.schema();
+    let emb_id = schema.columns.iter().find(|c| c.name == emb_col)?.id;
+    let idx = schema
+        .indexes
+        .iter()
+        .find(|idx| idx.kind == IndexKind::Ann && idx.column_id == emb_id)?;
+    match idx.options.ann.as_ref().map(|o| o.quantization) {
+        Some(mongreldb_core::schema::AnnQuantization::Dense) => Some("dense"),
+        Some(mongreldb_core::schema::AnnQuantization::BinarySign) | None => Some("binary_sign"),
+    }
+}
+
+fn existing_ann_index_name(db: &DbSession, table: &str, emb_col: &str) -> Option<String> {
+    let handle = db.database.table(table).ok()?;
+    let guard = handle.lock();
+    let schema = guard.schema();
+    let emb_id = schema.columns.iter().find(|c| c.name == emb_col)?.id;
+    schema
+        .indexes
+        .iter()
+        .find(|idx| idx.kind == IndexKind::Ann && idx.column_id == emb_id)
+        .map(|idx| idx.name.clone())
 }
 
 fn ensure_embedding_column_and_check_ann(
@@ -220,8 +306,8 @@ fn require_ann_surface(db: &DbSession, table: &str, emb_col: &str) -> AppResult<
         return Ok(());
     }
     Err(AppError::msg(format!(
-        "Table `{table}` has no dense ANN index on `{emb_col}`. \
-         Use Install Dense ANN first (and pick a text column that exists on this table)."
+        "Table `{table}` has no ANN index on `{emb_col}`. \
+         Use Install ANN first (Dense f32 cosine by default; pick a text column that exists on this table)."
     )))
 }
 

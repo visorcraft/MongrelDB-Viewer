@@ -8,7 +8,7 @@ use crate::db::connection::Connection;
 use crate::embeddings::EmbeddingHub;
 use crate::error::{AppError, AppResult};
 use crate::models::{
-    InstallAnnRequest, SemanticSearchRequest, SqlRequest, ToolTrace,
+    InstallAnnRequest, ReindexRequest, SemanticSearchRequest, SqlRequest, ToolTrace,
 };
 use parking_lot::RwLock;
 
@@ -71,7 +71,7 @@ pub fn tool_definitions() -> Vec<Value> {
         ),
         tool(
             "install_dense_ann",
-            "Install Dense ANN on a table (direct/local connections only).",
+            "Install ANN (HNSW) on a table (direct/local only). Default quantization is dense (full f32 cosine); pass binary_sign for legacy compact Hamming. Set rebuild=true to drop and recreate an existing ANN (e.g. BinarySign → Dense).",
             json!({
                 "type": "object",
                 "properties": {
@@ -80,9 +80,34 @@ pub fn tool_definitions() -> Vec<Value> {
                     "dimension": { "type": "integer", "default": 384 },
                     "source_text_column": { "type": "string" },
                     "provider_id": { "type": "string" },
-                    "backfill_limit": { "type": "integer" }
+                    "backfill_limit": { "type": "integer" },
+                    "quantization": {
+                        "type": "string",
+                        "enum": ["dense", "binary_sign"],
+                        "default": "dense",
+                        "description": "dense = full f32 cosine ANN; binary_sign = legacy compact Hamming"
+                    },
+                    "rebuild": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Drop existing ANN on the embedding column and recreate with the requested options"
+                    }
                 },
                 "required": ["table"],
+                "additionalProperties": false
+            }),
+        ),
+        tool(
+            "reindex",
+            "Run engine REINDEX maintenance (analyze + compact + GC). Omit table for the whole database; pass table for one table.",
+            json!({
+                "type": "object",
+                "properties": {
+                    "table": {
+                        "type": "string",
+                        "description": "Optional table name. Empty/omit = REINDEX entire database."
+                    }
+                },
                 "additionalProperties": false
             }),
         ),
@@ -253,10 +278,65 @@ impl ToolExecutor {
                             .get("backfill_limit")
                             .and_then(|v| v.as_u64())
                             .map(|n| n as usize),
+                        quantization: opt_str(&arguments, "quantization"),
+                        rebuild: arguments.get("rebuild").and_then(|v| v.as_bool()),
                     },
                 )
                 .await?;
                 Ok(json!(result))
+            }
+            "reindex" => {
+                let table = opt_str(&arguments, "table");
+                let direct = {
+                    let guard = self.db.read();
+                    let conn = guard.as_ref().ok_or(AppError::NoDatabase)?;
+                    match conn {
+                        Connection::Direct(d) => Some(crate::db::DbSession {
+                            path: d.path.clone(),
+                            database: std::sync::Arc::clone(&d.database),
+                            session: std::sync::Arc::clone(&d.session),
+                            opened_at: d.opened_at,
+                            credentials_required: d.credentials_required,
+                        }),
+                        Connection::Server(_) => None,
+                    }
+                };
+                if let Some(view) = direct {
+                    let result = crate::db::reindex(
+                        &view,
+                        ReindexRequest { table },
+                    )
+                    .await?;
+                    return Ok(json!(result));
+                }
+                // Server: issue REINDEX SQL over HTTP.
+                let sql = match table.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
+                    None => "REINDEX".to_string(),
+                    Some(name) => {
+                        if !name
+                            .chars()
+                            .all(|c| c.is_ascii_alphanumeric() || c == '_')
+                        {
+                            return Err(AppError::msg(format!(
+                                "invalid table name {name:?}"
+                            )));
+                        }
+                        format!("REINDEX {name}")
+                    }
+                };
+                let work = {
+                    let guard = self.db.read();
+                    let conn = guard.as_ref().ok_or(AppError::NoDatabase)?;
+                    conn.sql_work(SqlRequest {
+                        sql,
+                        max_rows: Some(1),
+                    })?
+                };
+                work.run().await?;
+                Ok(json!({
+                    "target": table.unwrap_or_else(|| "database".into()),
+                    "message": "REINDEX completed",
+                }))
             }
             "constellation" => {
                 let guard = self.db.read();

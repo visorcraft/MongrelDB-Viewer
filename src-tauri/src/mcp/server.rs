@@ -60,7 +60,7 @@ impl McpServer {
                         "version": env!("CARGO_PKG_VERSION"),
                         "title": "MongrelDB Viewer MCP"
                     },
-                    "instructions": "Explore and query the MongrelDB database currently open in MongrelDB Viewer. Prefer list_tables / describe_table before SQL. Use semantic_search for dense ANN. Use install_dense_ann to add 384-d HNSW when needed."
+                    "instructions": "Explore and query the MongrelDB database currently open in MongrelDB Viewer. Prefer list_tables / describe_table before SQL. Use semantic_search for ANN. Use install_dense_ann to add 384-d HNSW (default quantization=dense; binary_sign is the legacy compact path)."
                 }),
             ),
             "notifications/initialized" | "initialized" => {

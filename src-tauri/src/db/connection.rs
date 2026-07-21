@@ -268,7 +268,10 @@ fn server_table_detail(s: &ServerSession, name: &str) -> AppResult<TableDetail> 
                 type_name: c.ty.clone(),
                 flags,
                 embedding_dim: parse_embedding_dim(&c.ty),
-                embedding_source: None,
+                embedding_source: c
+                    .embedding_source
+                    .as_ref()
+                    .map(crate::db::inspect::describe_embedding_source),
             }
         })
         .collect();
@@ -283,12 +286,15 @@ fn server_table_detail(s: &ServerSession, name: &str) -> AppResult<TableDetail> 
     let indexes: Vec<IndexInfo> = schema
         .indexes
         .iter()
-        .map(|idx| IndexInfo {
-            name: idx.name.clone(),
-            column_id: idx.column_id,
-            column_name: col_name(idx.column_id),
-            kind: idx.kind.clone(),
-            predicate: idx.predicate.clone(),
+        .map(|idx| {
+            crate::db::inspect::index_info_from_parts(
+                idx.name.clone(),
+                idx.column_id,
+                col_name(idx.column_id),
+                idx.kind.clone(),
+                idx.predicate.clone(),
+                &idx.options,
+            )
         })
         .collect();
     let mut radar = IndexRadar {

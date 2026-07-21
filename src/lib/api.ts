@@ -52,7 +52,17 @@ export type ColumnInfo = {
   typeName: string;
   flags: string[];
   embeddingDim?: number | null;
+  /** How vectors are produced (e.g. supplied_by_application, configured_model · …). */
   embeddingSource?: string | null;
+};
+
+/** ANN HNSW options from schema. */
+export type AnnIndexOptions = {
+  m: number;
+  efConstruction: number;
+  efSearch: number;
+  /** "dense" (full f32 cosine) or "binary_sign" (legacy Hamming). */
+  quantization: string;
 };
 
 export type IndexInfo = {
@@ -61,6 +71,10 @@ export type IndexInfo = {
   columnName: string;
   kind: string;
   predicate?: string | null;
+  /** Present for ANN indexes. */
+  ann?: AnnIndexOptions | null;
+  /** Short human summary of kind-specific options. */
+  optionsSummary?: string | null;
 };
 
 export type IndexRadar = {
@@ -133,6 +147,16 @@ export type InstallAnnResult = {
   message: string;
   /** True when the table already had a durable ANN index. */
   alreadyReady?: boolean;
+  /** "dense" or "binary_sign". */
+  quantization?: string;
+  /** True when an existing ANN was dropped and recreated. */
+  rebuilt?: boolean;
+};
+
+export type ReindexResult = {
+  target: string;
+  message: string;
+  elapsedMs: number;
 };
 
 export async function appInfo() {
@@ -228,8 +252,22 @@ export async function installDenseAnn(req: {
   sourceTextColumn?: string;
   providerId?: string;
   backfillLimit?: number;
+  /** "dense" (default) or "binary_sign". */
+  quantization?: "dense" | "binary_sign";
+  m?: number;
+  efConstruction?: number;
+  efSearch?: number;
+  /** Drop existing ANN and recreate with the requested options. */
+  rebuild?: boolean;
 }) {
   return invoke<InstallAnnResult>("install_dense_ann", { req });
+}
+
+/** Engine REINDEX (analyze + compact + GC). Omit table for whole database. */
+export async function reindexDatabase(table?: string) {
+  return invoke<ReindexResult>("reindex_database", {
+    req: { table: table || null },
+  });
 }
 
 export async function semanticSearch(req: {

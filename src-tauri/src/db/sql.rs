@@ -9,10 +9,69 @@ use mongreldb_query::MongrelSession;
 
 use crate::db::session::DbSession;
 use crate::error::{AppError, AppResult};
-use crate::models::{SqlRequest, SqlResult};
+use crate::models::{ReindexRequest, ReindexResult, SqlRequest, SqlResult};
 
 pub async fn run_sql(db: &DbSession, req: SqlRequest) -> AppResult<SqlResult> {
     run_sql_session(Arc::clone(&db.session), req).await
+}
+
+/// Engine maintenance: `REINDEX` or `REINDEX <table>`.
+///
+/// Runs analyze + compact on the target table(s), then GC. Works on Direct
+/// sessions; callers that use server SQL should send the same statement via
+/// `sql_work` when the server supports it.
+pub async fn reindex(db: &DbSession, req: ReindexRequest) -> AppResult<ReindexResult> {
+    reindex_session(Arc::clone(&db.session), req).await
+}
+
+pub async fn reindex_session(
+    session: Arc<MongrelSession>,
+    req: ReindexRequest,
+) -> AppResult<ReindexResult> {
+    let table = req
+        .table
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty());
+    let (sql, target) = match table {
+        None => ("REINDEX".to_string(), "database".to_string()),
+        Some(name) => {
+            let ident = sanitize_sql_ident(name)?;
+            (format!("REINDEX {ident}"), ident)
+        }
+    };
+    let started = Instant::now();
+    session
+        .run(&sql)
+        .await
+        .map_err(|e| AppError::sql(format!("REINDEX failed: {e}")))?;
+    let elapsed_ms = started.elapsed().as_millis() as u64;
+    let message = if target == "database" {
+        format!("REINDEX completed for the entire database in {elapsed_ms} ms (analyze + compact + GC).")
+    } else {
+        format!(
+            "REINDEX completed for table `{target}` in {elapsed_ms} ms (analyze + compact + GC)."
+        )
+    };
+    Ok(ReindexResult {
+        target,
+        message,
+        elapsed_ms,
+    })
+}
+
+/// Allow only simple SQL identifiers (table/index names without quoting).
+fn sanitize_sql_ident(name: &str) -> AppResult<String> {
+    let ok = !name.is_empty()
+        && name
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '_');
+    if !ok {
+        return Err(AppError::msg(format!(
+            "invalid identifier {name:?}: use letters, digits, and underscore only"
+        )));
+    }
+    Ok(name.to_string())
 }
 
 pub async fn run_sql_session(session: Arc<MongrelSession>, req: SqlRequest) -> AppResult<SqlResult> {
@@ -53,6 +112,7 @@ fn classify(sql: &str) -> String {
         "SELECT" | "WITH" | "EXPLAIN" | "SHOW" | "DESCRIBE" | "DESC" | "VALUES" => "query".into(),
         "INSERT" | "UPDATE" | "DELETE" | "MERGE" | "TRUNCATE" => "dml".into(),
         "CREATE" | "ALTER" | "DROP" | "RENAME" => "ddl".into(),
+        "REINDEX" | "ANALYZE" | "VACUUM" | "OPTIMIZE" => "maintenance".into(),
         "BEGIN" | "COMMIT" | "ROLLBACK" | "SAVEPOINT" => "txn".into(),
         "ATTACH" | "DETACH" | "PRAGMA" | "SET" | "USE" => "session".into(),
         other if other.is_empty() => "empty".into(),

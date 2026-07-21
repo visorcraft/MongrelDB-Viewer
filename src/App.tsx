@@ -20,6 +20,7 @@ import {
   openDatabase,
   openServer,
   probeChat,
+  reindexDatabase,
   semanticSearch,
   setDemoUsed,
   startMcp,
@@ -138,6 +139,23 @@ function prettyIndexKind(kind: string): string {
   }
 }
 
+function prettyQuantization(q: string | undefined | null): string {
+  if (!q) return "—";
+  switch (q) {
+    case "dense":
+      return "Dense f32 cosine";
+    case "binary_sign":
+      return "BinarySign (Hamming)";
+    default:
+      return q;
+  }
+}
+
+/** First ANN index on the table detail, if any. */
+function annIndexOn(detail: TableDetail | null) {
+  return detail?.indexes.find((i) => i.kind.toLowerCase().includes("ann")) ?? null;
+}
+
 export default function App() {
   const [view, setView] = useState<View>("deck");
   const [aboutSub, setAboutSub] = useState<AboutSub>("about");
@@ -169,6 +187,8 @@ export default function App() {
   const [annQuery, setAnnQuery] = useState("AI-native retrieval with dense vectors");
   const [annK, setAnnK] = useState(3);
   const [annMinScore, setAnnMinScore] = useState(0.25);
+  /** dense = full f32 cosine (default); binary_sign = legacy compact Hamming. */
+  const [annQuantization, setAnnQuantization] = useState<"dense" | "binary_sign">("dense");
   const [annResult, setAnnResult] = useState<SqlResult | null>(null);
   const [modelsNote, setModelsNote] = useState("");
 
@@ -564,6 +584,22 @@ export default function App() {
         run: () => runSqlText(q.sql),
       });
     }
+    if (selectedTable) {
+      acts.push({
+        id: `reindex-${selectedTable}`,
+        group: "Maintenance",
+        label: `REINDEX ${selectedTable}`,
+        hint: "analyze + compact + GC",
+        run: () => onReindexTable(selectedTable),
+      });
+    }
+    acts.push({
+      id: "reindex-all",
+      group: "Maintenance",
+      label: "REINDEX all tables",
+      hint: "database-wide maintenance",
+      run: () => onReindexAll(),
+    });
     acts.push({
       id: "disconnect",
       group: "Session",
@@ -572,16 +608,18 @@ export default function App() {
     });
     return acts;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [overview, insights]);
+  }, [overview, insights, selectedTable]);
 
-  const onInstallAnn = (opts?: { reembed?: boolean }) =>
+  const onInstallAnn = (opts?: { reembed?: boolean; rebuild?: boolean }) =>
     withBusy(async () => {
       const table = annTable || selectedTable;
       const tableMeta = overview?.tables.find((t) => t.name === table);
-      // ANN is durable in the DB schema - skip install if already active.
-      if (tableMeta?.hasAnn && !opts?.reembed) {
+      const rebuild = !!opts?.rebuild;
+      // ANN is durable in the DB schema - skip install if already active
+      // (unless re-embed or rebuild).
+      if (tableMeta?.hasAnn && !opts?.reembed && !rebuild) {
         setOk(
-          `Dense ANN already active on ${table} (${tableMeta.embeddingDims[0] ?? 384}-d). Persists with the database.`,
+          `ANN already active on ${table} (${tableMeta.embeddingDims[0] ?? 384}-d). Persists with the database. Use Rebuild to change quantization.`,
         );
         return;
       }
@@ -601,20 +639,63 @@ export default function App() {
           return;
         }
       }
-      await ensureLocalEmbeddings();
+      // Rebuild always needs local model only if also re-embedding.
+      const willEmbed =
+        !!textCol && (rebuild || opts?.reembed || !tableMeta?.hasAnn);
+      if (willEmbed) {
+        await ensureLocalEmbeddings();
+      }
       const res = await installDenseAnn({
         table,
         embeddingColumn: "embedding",
         dimension: 384,
-        // Only send text column when enabling first-time (auto-embed) or explicit re-embed.
-        sourceTextColumn:
-          opts?.reembed || !tableMeta?.hasAnn ? textCol || undefined : undefined,
+        // Re-embed when: first install, explicit re-embed, or rebuild with a text col selected.
+        sourceTextColumn: willEmbed ? textCol || undefined : undefined,
         backfillLimit: 5000,
+        quantization: annQuantization,
+        rebuild,
       });
       setOk(res.message);
       await refresh();
       if (selectedTable) setTableDetail(await getTable(selectedTable));
       if (annTable) setAnnTableDetail(await getTable(annTable));
+    });
+
+  const afterReindex = async () => {
+    await refresh();
+    if (selectedTable) {
+      try {
+        setTableDetail(await getTable(selectedTable));
+      } catch {
+        /* optional */
+      }
+    }
+    if (annTable) {
+      try {
+        setAnnTableDetail(await getTable(annTable));
+      } catch {
+        /* optional */
+      }
+    }
+  };
+
+  const onReindexTable = (table: string) =>
+    withBusy(async () => {
+      const target = table.trim();
+      if (!target) {
+        setError("Pick a table before REINDEX table.");
+        return;
+      }
+      const res = await reindexDatabase(target);
+      setOk(res.message);
+      await afterReindex();
+    });
+
+  const onReindexAll = () =>
+    withBusy(async () => {
+      const res = await reindexDatabase();
+      setOk(res.message);
+      await afterReindex();
     });
 
   const onSemantic = () =>
@@ -623,7 +704,7 @@ export default function App() {
       const tableMeta = overview?.tables.find((t) => t.name === table);
       if (!tableMeta?.hasAnn) {
         setError(
-          `Table \`${table}\` has no dense ANN index yet. Install Dense ANN first (and only pick a text column that exists on that table).`,
+          `Table \`${table}\` has no ANN index yet. Install ANN first (Dense f32 cosine by default; pick a text column that exists on that table).`,
         );
         return;
       }
@@ -933,9 +1014,12 @@ export default function App() {
                       selectedTable={selectedTable}
                       setSelectedTable={setSelectedTable}
                       detail={tableDetail}
+                      busy={busy}
                       onSample={() =>
                         runSqlText(`SELECT * FROM ${selectedTable} LIMIT 50`)
                       }
+                      onReindexTable={() => onReindexTable(selectedTable)}
+                      onReindexDatabase={onReindexAll}
                     />
                     <TableBrowser
                       table={selectedTable}
@@ -973,6 +1057,8 @@ export default function App() {
                     setAnnK={setAnnK}
                     annMinScore={annMinScore}
                     setAnnMinScore={setAnnMinScore}
+                    annQuantization={annQuantization}
+                    setAnnQuantization={setAnnQuantization}
                     onInstallAnn={onInstallAnn}
                     onSemantic={onSemantic}
                     result={annResult}
@@ -1384,13 +1470,19 @@ function TableView({
   selectedTable,
   setSelectedTable,
   detail,
+  busy,
   onSample,
+  onReindexTable,
+  onReindexDatabase,
 }: {
   overview: DatabaseOverview;
   selectedTable: string;
   setSelectedTable: (t: string) => void;
   detail: TableDetail | null;
+  busy: boolean;
   onSample: () => void;
+  onReindexTable: () => void;
+  onReindexDatabase: () => void;
 }) {
   const radar = detail?.indexRadar;
   const max = Math.max(
@@ -1424,6 +1516,24 @@ function TableView({
               <button type="button" className="btn" onClick={onSample}>
                 Sample rows
               </button>
+              <button
+                type="button"
+                className="btn ghost"
+                disabled={busy || !selectedTable}
+                title="REINDEX this table (analyze + compact + GC)"
+                onClick={onReindexTable}
+              >
+                REINDEX table
+              </button>
+              <button
+                type="button"
+                className="btn ghost"
+                disabled={busy}
+                title="REINDEX entire database"
+                onClick={onReindexDatabase}
+              >
+                REINDEX all
+              </button>
             </div>
           </div>
           <div className="panel-body">
@@ -1441,6 +1551,7 @@ function TableView({
                         <th>Name</th>
                         <th>Type</th>
                         <th>Flags</th>
+                        <th>Embedding source</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1450,6 +1561,10 @@ function TableView({
                           <td>{c.name}</td>
                           <td>{c.typeName}</td>
                           <td>{c.flags.join(", ") || "-"}</td>
+                          <td className="muted">
+                            {c.embeddingSource ||
+                              (c.embeddingDim != null ? "supplied_by_application" : "—")}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -1509,6 +1624,7 @@ function TableView({
                       <th>Name</th>
                       <th>Kind</th>
                       <th>Column</th>
+                      <th>Options</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1519,6 +1635,12 @@ function TableView({
                           <span className={`chip ${chipClass(i.kind)}`}>{prettyIndexKind(i.kind)}</span>
                         </td>
                         <td>{i.columnName}</td>
+                        <td className="muted" title={i.optionsSummary ?? undefined}>
+                          {i.optionsSummary ||
+                            (i.ann
+                              ? prettyQuantization(i.ann.quantization)
+                              : "—")}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -1548,7 +1670,9 @@ function AnnView(props: {
   setAnnK: (v: number) => void;
   annMinScore: number;
   setAnnMinScore: (v: number) => void;
-  onInstallAnn: (opts?: { reembed?: boolean }) => void;
+  annQuantization: "dense" | "binary_sign";
+  setAnnQuantization: (v: "dense" | "binary_sign") => void;
+  onInstallAnn: (opts?: { reembed?: boolean; rebuild?: boolean }) => void;
   onSemantic: () => void;
   result: SqlResult | null;
   busy: boolean;
@@ -1557,6 +1681,8 @@ function AnnView(props: {
   const selected = props.overview.tables.find((t) => t.name === props.annTable);
   const annReady = !!selected?.hasAnn;
   const embDim = selected?.embeddingDims?.[0] ?? 384;
+  const activeAnn = annIndexOn(props.annTableDetail);
+  const activeQuant = activeAnn?.ann?.quantization;
   const textCols = textColumnOptions(props.annTableDetail?.columns ?? []);
   const hasTextSource = textCols.length > 0;
   const textColValid = !!props.annTextCol && textCols.some((c) => c.name === props.annTextCol);
@@ -1566,7 +1692,19 @@ function AnnView(props: {
   const canEnable =
     !props.busy && !isServer && !annReady && schemaLoaded && hasTextSource && textColValid;
   const canReembed = !props.busy && !isServer && annReady && textColValid;
+  // Rebuild does not require a text column (index-only); re-embed is optional if selected.
+  const canRebuild = !props.busy && !isServer && annReady && schemaLoaded;
   const canSearch = !props.busy && annReady;
+  const installLabel =
+    props.annQuantization === "binary_sign"
+      ? "Enable 384-d BinarySign ANN + embed with MiniLM"
+      : "Enable 384-d Dense ANN + embed with MiniLM";
+  const rebuildLabel =
+    props.annQuantization === "binary_sign"
+      ? "Rebuild as BinarySign ANN"
+      : "Rebuild as Dense ANN";
+  const quantChanging =
+    !!activeQuant && activeQuant !== props.annQuantization;
 
   let enableBlockedReason: string | null = null;
   if (isServer) {
@@ -1577,7 +1715,7 @@ function AnnView(props: {
   } else if (!schemaLoaded) {
     enableBlockedReason = "Loading table schema…";
   } else if (!hasTextSource) {
-    enableBlockedReason = `Table \`${props.annTable}\` has no embeddable text columns (Bytes/JSON/string). Dense ANN + MiniLM needs something to embed.`;
+    enableBlockedReason = `Table \`${props.annTable}\` has no embeddable text columns (Bytes/JSON/string). ANN + MiniLM needs something to embed.`;
   } else if (!textColValid) {
     enableBlockedReason = "Pick a text column on this table before enabling.";
   }
@@ -1587,7 +1725,7 @@ function AnnView(props: {
       <div className="grid-2">
         <div className="panel">
           <div className="panel-header">
-            <h2>{annReady ? "Dense ANN" : "Install Dense ANN"}</h2>
+            <h2>{annReady ? "ANN index" : "Install ANN"}</h2>
             {annReady && <span className="status-pill ready">Active</span>}
             {!annReady && schemaLoaded && !hasTextSource && (
               <span className="status-pill blocked">Not eligible</span>
@@ -1619,11 +1757,17 @@ function AnnView(props: {
             {annReady ? (
               <div className="ann-status ready" role="status">
                 <div className="ann-status-title">
-                  Dense ANN active · {embDim}-d
+                  {prettyQuantization(activeQuant)} · {embDim}-d HNSW
                 </div>
                 <p className="ann-status-body">
-                  Index lives in this database - still available after you close
+                  {activeAnn?.optionsSummary
+                    ? `Options: ${activeAnn.optionsSummary}. `
+                    : null}
+                  Index lives in this database — still available after you close
                   the app and reopen the same path. Search on the right is ready.
+                  {activeQuant === "binary_sign"
+                    ? " BinarySign uses Hamming prefilter; exact cosine rerank still applies when enabled."
+                    : " Dense stores full f32 vectors with cosine distance in the graph."}
                 </p>
               </div>
             ) : enableBlockedReason && !isServer ? (
@@ -1634,10 +1778,35 @@ function AnnView(props: {
             ) : null}
 
             <div className="field">
+              <label htmlFor="ann-quant">Quantization</label>
+              <span className="field-hint">
+                Dense is full f32 cosine (recommended). BinarySign is the legacy
+                compact Hamming path.
+                {annReady
+                  ? " Changing this requires Rebuild (drop + create index)."
+                  : null}
+              </span>
+              <select
+                id="ann-quant"
+                className="control"
+                value={props.annQuantization}
+                onChange={(e) =>
+                  props.setAnnQuantization(e.target.value as "dense" | "binary_sign")
+                }
+                disabled={isServer}
+              >
+                <option value="dense">Dense · f32 cosine (default)</option>
+                <option value="binary_sign">BinarySign · compact Hamming (advanced)</option>
+              </select>
+            </div>
+
+            <div className="field">
               <label htmlFor="ann-text-col">Text column</label>
               <span className="field-hint">
-                Required embed source on <code>{props.annTable || "this table"}</code>
-                {annReady ? " · re-embed" : " · install + embed"}
+                Embed source on <code>{props.annTable || "this table"}</code>
+                {annReady
+                  ? " · required for re-embed; optional when rebuilding"
+                  : " · install + embed"}
               </span>
               <select
                 id="ann-text-col"
@@ -1659,19 +1828,36 @@ function AnnView(props: {
 
             <div className="field-actions">
               {annReady ? (
-                <button
-                  type="button"
-                  className="btn ghost"
-                  disabled={!canReembed}
-                  onClick={() => props.onInstallAnn({ reembed: true })}
-                  title={
-                    canReembed
-                      ? "Rewrite embedding vectors from the text column"
-                      : "Pick a valid text column to re-embed"
-                  }
-                >
-                  Re-embed from text column
-                </button>
+                <>
+                  <button
+                    type="button"
+                    className="btn ghost"
+                    disabled={!canReembed}
+                    onClick={() => props.onInstallAnn({ reembed: true })}
+                    title={
+                      canReembed
+                        ? "Rewrite embedding vectors from the text column"
+                        : "Pick a valid text column to re-embed"
+                    }
+                  >
+                    Re-embed from text column
+                  </button>
+                  <button
+                    type="button"
+                    className="btn magenta"
+                    disabled={!canRebuild}
+                    onClick={() => props.onInstallAnn({ rebuild: true })}
+                    title={
+                      canRebuild
+                        ? quantChanging
+                          ? `Drop ANN and recreate as ${props.annQuantization}; re-embeds if a text column is selected`
+                          : "Drop ANN and recreate with the selected quantization; re-embeds if a text column is selected"
+                        : "Rebuild needs a direct connection and an existing ANN"
+                    }
+                  >
+                    {rebuildLabel}
+                  </button>
+                </>
               ) : (
                 <button
                   type="button"
@@ -1680,11 +1866,17 @@ function AnnView(props: {
                   onClick={() => props.onInstallAnn()}
                   title={enableBlockedReason ?? "Install ANN and embed rows"}
                 >
-                  Enable 384-d ANN + embed with MiniLM
+                  {installLabel}
                 </button>
               )}
             </div>
-            {enableBlockedReason && (
+            {annReady && quantChanging && (
+              <p className="field-hint" style={{ marginTop: 12 }}>
+                Active index is {prettyQuantization(activeQuant)}; rebuild will switch to{" "}
+                {prettyQuantization(props.annQuantization)}.
+              </p>
+            )}
+            {enableBlockedReason && !annReady && (
               <p className="field-hint" style={{ marginTop: 12 }}>
                 {enableBlockedReason}
               </p>
@@ -1697,8 +1889,13 @@ function AnnView(props: {
           </div>
           <div className="panel-body ann-search-form">
             <p className="field-lede">
-              Top-k nearest neighbors with exact cosine rerank - not a keyword filter.
+              Top-k nearest neighbors with exact cosine rerank — not a keyword filter.
               Weak hits fall away below the min score.
+              {activeQuant === "dense"
+                ? " Dense ANN also scores with cosine distance inside HNSW."
+                : activeQuant === "binary_sign"
+                  ? " BinarySign HNSW prefilters with Hamming; rerank restores cosine order."
+                  : null}
             </p>
             <div className="field">
               <label htmlFor="ann-query">Query</label>
@@ -1747,7 +1944,7 @@ function AnnView(props: {
                 title={
                   canSearch
                     ? "Run semantic search on this table"
-                    : "Install Dense ANN on this table before searching"
+                    : "Install ANN on this table before searching"
                 }
               >
                 Search (HNSW + exact rerank)
@@ -1755,7 +1952,7 @@ function AnnView(props: {
             </div>
             {!annReady && (
               <p className="field-hint" style={{ marginTop: 10 }}>
-                Semantic search only runs on tables that already have a dense ANN
+                Semantic search only runs on tables that already have an ANN
                 index (look for “vector ready”).
               </p>
             )}

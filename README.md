@@ -61,7 +61,7 @@ MongrelDB has 30+ language bindings. For a Tauri desktop viewer the **best fit i
 | **Schema Constellation** | Living graph of tables → columns → six index kinds |
 | **Table Inspector** | Columns, flags, **index radar** (Bitmap / PGM / FM / ANN / Sparse / MinHash) |
 | **SQL Console** | DataFusion 54 SQL, DDL/DML, scored search functions |
-| **Dense ANN Lab** | Install 384-d HNSW (default **all-MiniLM-L6-v2**), backfill, semantic search + exact rerank |
+| **Dense ANN Lab** | Install 384-d HNSW (default **dense** f32 cosine, optional BinarySign; MiniLM embed), semantic search + exact rerank |
 | **Agent Nexus** | OpenAI-compatible chat with tool-calling against the open DB |
 | **MCP Bridge** | HTTP JSON-RPC MCP server (and `--mcp-stdio`) for terminal/IDE clients |
 
@@ -134,7 +134,7 @@ User guides live in [`docs/`](docs/README.md):
 - [SQL](docs/sql.md) · [Vector search (ANN)](docs/ann.md) · [Agent](docs/agent.md) · [MCP](docs/mcp.md)  
 - [About / Licenses / Credits](docs/about.md)
 
-## Dense ANN (384-d)
+## ANN (384-d, dense by default)
 
 Default local model: **`all-MiniLM-L6-v2`** (384 dimensions), loaded on demand via [fastembed](https://github.com/Anush008/fastembed-rs) into the user cache (`~/.cache/mongreldb-viewer/models` on Linux).
 

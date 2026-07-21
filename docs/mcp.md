@@ -52,7 +52,8 @@ Typical tools include:
 - `constellation`  
 - `execute_sql`  
 - `semantic_search`  
-- `install_dense_ann` (Direct only)  
+- `install_dense_ann` (Direct only; `rebuild=true` drops and recreates ANN)  
+- `reindex` (optional `table`; whole DB when omitted)  
 - `list_embedding_providers`  
 
 Exact names appear in the MCP status / snippet panel.

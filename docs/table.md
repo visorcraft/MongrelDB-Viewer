@@ -40,10 +40,24 @@ Named secondary indexes with kind and target column.
 Actions may open the SQL workbench with a `SELECT … LIMIT` for the current
 table so you can inspect rows without leaving the explorer flow.
 
+## Maintenance: REINDEX
+
+From the Table inspector:
+
+| Button | SQL equivalent | Effect |
+| ------ | -------------- | ------ |
+| **REINDEX table** | `REINDEX <table>` | Analyze + compact this table, then GC |
+| **REINDEX all** | `REINDEX` | Same for every table |
+
+Also available from the command palette under **Maintenance**.
+
+This is **index maintenance**, not ANN rebuild. To change ANN quantization
+(e.g. BinarySign → Dense), use **Rebuild ANN** on the Vector search tab.
+
 ## Tips
 
 - Tables without ANN are still fully browsable - vector search simply will not
-  enable until you install dense ANN (when eligible).  
+  enable until you install ANN (when eligible).  
 - Large tables: prefer SQL with filters and limits instead of unbounded samples.  
 
 Related: [Deck](deck.md) · [SQL](sql.md) · [Vector search](ann.md)

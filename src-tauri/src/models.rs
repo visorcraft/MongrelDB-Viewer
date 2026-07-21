@@ -66,7 +66,20 @@ pub struct ColumnInfo {
     pub type_name: String,
     pub flags: Vec<String>,
     pub embedding_dim: Option<u32>,
+    /// Human description of how vectors are produced for this column
+    /// (e.g. `supplied_by_application`, `configured_model · …`).
     pub embedding_source: Option<String>,
+}
+
+/// ANN HNSW options from schema (`IndexDef.options.ann`).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AnnIndexOptions {
+    pub m: usize,
+    pub ef_construction: usize,
+    pub ef_search: usize,
+    /// `"dense"` (full f32 cosine) or `"binary_sign"` (legacy Hamming).
+    pub quantization: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -77,6 +90,12 @@ pub struct IndexInfo {
     pub column_name: String,
     pub kind: String,
     pub predicate: Option<String>,
+    /// Present when `kind` is ANN and options were stored on the index.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ann: Option<AnnIndexOptions>,
+    /// Short human summary of kind-specific options (ANN / MinHash / LearnedRange).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub options_summary: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -173,6 +192,12 @@ pub struct InstallAnnRequest {
     pub ef_construction: Option<usize>,
     pub ef_search: Option<usize>,
     pub backfill_limit: Option<usize>,
+    /// `"dense"` (default, full f32 cosine) or `"binary_sign"` (legacy compact).
+    pub quantization: Option<String>,
+    /// Drop existing ANN on the embedding column and recreate with the requested
+    /// options (quantization / m / ef_*). Use to upgrade BinarySign → Dense.
+    #[serde(default)]
+    pub rebuild: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -184,9 +209,32 @@ pub struct InstallAnnResult {
     pub index_name: String,
     pub rows_embedded: u64,
     pub message: String,
-    /// True when the table already had a dense ANN index (no DDL needed).
+    /// True when the table already had an ANN index and no rebuild/DDL was needed.
     #[serde(default)]
     pub already_ready: bool,
+    /// Quantization used for the index (`dense` or `binary_sign`).
+    #[serde(default)]
+    pub quantization: String,
+    /// True when an existing ANN index was dropped and recreated.
+    #[serde(default)]
+    pub rebuilt: bool,
+}
+
+/// Run engine `REINDEX` maintenance (analyze + compact + GC).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ReindexRequest {
+    /// Table name. Omit or empty for whole-database `REINDEX`.
+    pub table: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ReindexResult {
+    /// `"database"` or the table name.
+    pub target: String,
+    pub message: String,
+    pub elapsed_ms: u64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

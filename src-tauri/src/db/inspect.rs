@@ -1,10 +1,13 @@
-use mongreldb_core::schema::{IndexKind, TypeId};
+use mongreldb_core::schema::{
+    AnnQuantization, IndexKind, IndexOptions, TypeId,
+};
+use mongreldb_core::EmbeddingSource;
 
 use crate::db::session::DbSession;
 use crate::error::{AppError, AppResult};
 use crate::models::{
-    ColumnInfo, ConstellationGraph, DatabaseOverview, ForeignKeyInfo, GraphEdge, GraphNode,
-    IndexInfo, IndexRadar, TableDetail, TableSummary,
+    AnnIndexOptions, ColumnInfo, ConstellationGraph, DatabaseOverview, ForeignKeyInfo, GraphEdge,
+    GraphNode, IndexInfo, IndexRadar, TableDetail, TableSummary,
 };
 
 pub fn database_overview(db: &DbSession) -> AppResult<DatabaseOverview> {
@@ -115,7 +118,10 @@ pub fn table_detail(db: &DbSession, name: &str) -> AppResult<TableDetail> {
                     TypeId::Embedding { dim } => Some(dim),
                     _ => None,
                 },
-                embedding_source: c.embedding_source.as_ref().map(|s| s.label().to_string()),
+                embedding_source: c
+                    .embedding_source
+                    .as_ref()
+                    .map(describe_embedding_source),
             }
         })
         .collect();
@@ -132,12 +138,15 @@ pub fn table_detail(db: &DbSession, name: &str) -> AppResult<TableDetail> {
     let indexes: Vec<IndexInfo> = schema
         .indexes
         .iter()
-        .map(|idx| IndexInfo {
-            name: idx.name.clone(),
-            column_id: idx.column_id,
-            column_name: col_name(idx.column_id),
-            kind: index_kind_name(idx.kind).into(),
-            predicate: idx.predicate.clone(),
+        .map(|idx| {
+            index_info_from_parts(
+                idx.name.clone(),
+                idx.column_id,
+                col_name(idx.column_id),
+                index_kind_name(idx.kind).into(),
+                idx.predicate.clone(),
+                &idx.options,
+            )
         })
         .collect();
 
@@ -269,6 +278,7 @@ pub fn build_constellation(db: &DbSession) -> AppResult<ConstellationGraph> {
                     "type": col.type_name,
                     "flags": col.flags,
                     "dim": col.embedding_dim,
+                    "embeddingSource": col.embedding_source,
                 }),
             });
             edges.push(GraphEdge {
@@ -280,13 +290,19 @@ pub fn build_constellation(db: &DbSession) -> AppResult<ConstellationGraph> {
 
         for idx in &detail.indexes {
             let idx_id = format!("idx:{name}:{}", idx.name);
+            let label = match &idx.options_summary {
+                Some(s) => format!("{} ({}) · {}", idx.name, idx.kind, s),
+                None => format!("{} ({})", idx.name, idx.kind),
+            };
             nodes.push(GraphNode {
                 id: idx_id.clone(),
-                label: format!("{} ({})", idx.name, idx.kind),
+                label,
                 kind: "index".into(),
                 meta: serde_json::json!({
                     "kind": idx.kind,
                     "column": idx.column_name,
+                    "options": idx.options_summary,
+                    "ann": idx.ann,
                 }),
             });
             edges.push(GraphEdge {
@@ -358,6 +374,111 @@ fn index_kind_name(kind: IndexKind) -> &'static str {
         IndexKind::LearnedRange => "LearnedRange",
         IndexKind::MinHash => "MinHash",
         IndexKind::Sparse => "Sparse",
+    }
+}
+
+/// Build [`IndexInfo`] from shared direct/server field pieces.
+pub fn index_info_from_parts(
+    name: String,
+    column_id: u16,
+    column_name: String,
+    kind: String,
+    predicate: Option<String>,
+    options: &IndexOptions,
+) -> IndexInfo {
+    let is_ann = kind.to_ascii_lowercase().contains("ann");
+    let ann = if is_ann {
+        Some(ann_options_info(options))
+    } else {
+        None
+    };
+    let options_summary = options_summary_for(&kind, options);
+    IndexInfo {
+        name,
+        column_id,
+        column_name,
+        kind,
+        predicate,
+        ann,
+        options_summary,
+    }
+}
+
+/// ANN options from schema, or engine defaults when omitted (BinarySign).
+fn ann_options_info(options: &IndexOptions) -> AnnIndexOptions {
+    match options.ann.as_ref() {
+        Some(ann) => AnnIndexOptions {
+            m: ann.m,
+            ef_construction: ann.ef_construction,
+            ef_search: ann.ef_search,
+            quantization: quantization_name(ann.quantization).into(),
+        },
+        None => AnnIndexOptions {
+            m: 16,
+            ef_construction: 64,
+            ef_search: 64,
+            quantization: "binary_sign".into(),
+        },
+    }
+}
+
+fn quantization_name(q: AnnQuantization) -> &'static str {
+    match q {
+        AnnQuantization::Dense => "dense",
+        AnnQuantization::BinarySign => "binary_sign",
+    }
+}
+
+fn options_summary_for(kind: &str, options: &IndexOptions) -> Option<String> {
+    let k = kind.to_ascii_lowercase();
+    if k.contains("ann") {
+        if let Some(ann) = &options.ann {
+            return Some(format!(
+                "{} · m={} · efc={} · efs={}",
+                quantization_name(ann.quantization),
+                ann.m,
+                ann.ef_construction,
+                ann.ef_search
+            ));
+        }
+        // Schema omitted options → engine default is BinarySign.
+        return Some("binary_sign (default)".into());
+    }
+    if k.contains("minhash") {
+        if let Some(mh) = &options.minhash {
+            return Some(format!(
+                "permutations={} · bands={}",
+                mh.permutations, mh.bands
+            ));
+        }
+    }
+    if k.contains("learned") || k.contains("range") || k.contains("pgm") {
+        if let Some(lr) = &options.learned_range {
+            return Some(format!("epsilon={}", lr.epsilon));
+        }
+    }
+    None
+}
+
+/// Rich description of an embedding column's vector source.
+pub fn describe_embedding_source(src: &EmbeddingSource) -> String {
+    match src {
+        EmbeddingSource::SuppliedByApplication => "supplied_by_application".into(),
+        EmbeddingSource::ConfiguredModel {
+            provider_id,
+            model_id,
+            model_version,
+        } => format!("configured_model · {provider_id} / {model_id} @ {model_version}"),
+        EmbeddingSource::LocalModel { model_id, .. } => {
+            format!("local_model · {model_id}")
+        }
+        EmbeddingSource::GeneratedColumn { provider } => {
+            format!("generated_column · {provider}")
+        }
+        EmbeddingSource::GeneratedColumnSpec { spec } => format!(
+            "generated_column · {} / {} @ {}",
+            spec.provider_id, spec.model_id, spec.model_version
+        ),
     }
 }
 
