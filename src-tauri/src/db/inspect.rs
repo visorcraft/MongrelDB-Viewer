@@ -1,6 +1,4 @@
-use mongreldb_core::schema::{
-    AnnQuantization, IndexKind, IndexOptions, TypeId,
-};
+use mongreldb_core::schema::{AnnQuantization, IndexKind, IndexOptions, TypeId};
 use mongreldb_core::EmbeddingSource;
 
 use crate::db::session::DbSession;
@@ -106,7 +104,9 @@ pub fn table_detail(db: &DbSession, name: &str) -> AppResult<TableDetail> {
             if c.flags.contains(ColumnFlagsBits::AUTO_INCREMENT) {
                 flags.push("AUTO_INCREMENT".into());
             }
-            if c.flags.contains(ColumnFlagsBits::EMBEDDING_BINARY_QUANTIZED) {
+            if c.flags
+                .contains(ColumnFlagsBits::EMBEDDING_BINARY_QUANTIZED)
+            {
                 flags.push("EMBEDDING_BINARY_QUANTIZED".into());
             }
             ColumnInfo {
@@ -118,10 +118,7 @@ pub fn table_detail(db: &DbSession, name: &str) -> AppResult<TableDetail> {
                     TypeId::Embedding { dim } => Some(dim),
                     _ => None,
                 },
-                embedding_source: c
-                    .embedding_source
-                    .as_ref()
-                    .map(describe_embedding_source),
+                embedding_source: c.embedding_source.as_ref().map(describe_embedding_source),
             }
         })
         .collect();

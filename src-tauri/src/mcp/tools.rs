@@ -351,24 +351,15 @@ impl ToolExecutor {
                     }
                 };
                 if let Some(view) = direct {
-                    let result = crate::db::reindex(
-                        &view,
-                        ReindexRequest { table },
-                    )
-                    .await?;
+                    let result = crate::db::reindex(&view, ReindexRequest { table }).await?;
                     return Ok(json!(result));
                 }
                 // Server: issue REINDEX SQL over HTTP.
                 let sql = match table.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
                     None => "REINDEX".to_string(),
                     Some(name) => {
-                        if !name
-                            .chars()
-                            .all(|c| c.is_ascii_alphanumeric() || c == '_')
-                        {
-                            return Err(AppError::msg(format!(
-                                "invalid table name {name:?}"
-                            )));
+                        if !name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') {
+                            return Err(AppError::msg(format!("invalid table name {name:?}")));
                         }
                         format!("REINDEX {name}")
                     }

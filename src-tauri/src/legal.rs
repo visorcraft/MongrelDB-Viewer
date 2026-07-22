@@ -144,10 +144,8 @@ pub fn license_document(id: &str) -> AppResult<String> {
 }
 
 pub fn credits_data() -> AppResult<CreditsData> {
-    let crates: Vec<CrateCredit> =
-        serde_json::from_str(include_str!("../legal/crates.json")).map_err(|e| {
-            AppError::msg(format!("failed to parse bundled crates.json: {e}"))
-        })?;
+    let crates: Vec<CrateCredit> = serde_json::from_str(include_str!("../legal/crates.json"))
+        .map_err(|e| AppError::msg(format!("failed to parse bundled crates.json: {e}")))?;
     let packages: Vec<NpmPackageCredit> =
         serde_json::from_str(include_str!("../legal/npm-packages.json")).map_err(|e| {
             AppError::msg(format!("failed to parse bundled npm-packages.json: {e}"))

@@ -62,10 +62,7 @@ pub async fn reindex_session(
 
 /// Allow only simple SQL identifiers (table/index names without quoting).
 fn sanitize_sql_ident(name: &str) -> AppResult<String> {
-    let ok = !name.is_empty()
-        && name
-            .chars()
-            .all(|c| c.is_ascii_alphanumeric() || c == '_');
+    let ok = !name.is_empty() && name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_');
     if !ok {
         return Err(AppError::msg(format!(
             "invalid identifier {name:?}: use letters, digits, and underscore only"
@@ -74,7 +71,10 @@ fn sanitize_sql_ident(name: &str) -> AppResult<String> {
     Ok(name.to_string())
 }
 
-pub async fn run_sql_session(session: Arc<MongrelSession>, req: SqlRequest) -> AppResult<SqlResult> {
+pub async fn run_sql_session(
+    session: Arc<MongrelSession>,
+    req: SqlRequest,
+) -> AppResult<SqlResult> {
     let sql = req.sql.trim();
     if sql.is_empty() {
         return Err(AppError::sql("empty SQL"));
@@ -105,7 +105,6 @@ pub async fn run_sql_session(session: Arc<MongrelSession>, req: SqlRequest) -> A
 
 fn classify(sql: &str) -> String {
     let head = sql
-        .trim_start()
         .split_whitespace()
         .next()
         .unwrap_or("")
@@ -117,7 +116,7 @@ fn classify(sql: &str) -> String {
         "REINDEX" | "ANALYZE" | "VACUUM" | "OPTIMIZE" => "maintenance".into(),
         "BEGIN" | "COMMIT" | "ROLLBACK" | "SAVEPOINT" => "txn".into(),
         "ATTACH" | "DETACH" | "PRAGMA" | "SET" | "USE" => "session".into(),
-        other if other.is_empty() => "empty".into(),
+        "" => "empty".into(),
         other => other.to_ascii_lowercase(),
     }
 }

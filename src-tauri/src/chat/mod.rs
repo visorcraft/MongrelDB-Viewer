@@ -113,7 +113,7 @@ pub async fn chat(executor: &ToolExecutor, req: ChatRequest) -> AppResult<ChatRe
             content: content.clone(),
             tool_call_id: None,
             name: None,
-            tool_calls: tool_calls.as_ref().map(|c| c.clone()),
+            tool_calls: tool_calls.clone(),
         });
 
         let Some(calls) = tool_calls else {
@@ -196,7 +196,10 @@ pub async fn probe(cfg: &ChatConfig) -> AppResult<Value> {
     let url = if base.ends_with("/v1") {
         format!("{base}/models")
     } else if base.contains("/v1/") {
-        format!("{}/models", base.rsplit_once("/v1").map(|(a, _)| a).unwrap_or(base))
+        format!(
+            "{}/models",
+            base.rsplit_once("/v1").map(|(a, _)| a).unwrap_or(base)
+        )
     } else {
         format!("{base}/v1/models")
     };

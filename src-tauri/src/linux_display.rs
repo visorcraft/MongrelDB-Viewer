@@ -80,7 +80,8 @@ fn install_desktop_integration() -> Result<(), String> {
         for id in [PRIMARY_ID, FALLBACK_ID] {
             let path = dir.join(format!("{id}.png"));
             // Skip rewrite if identical size (cheap check) and file exists.
-            if path.is_file() && fs::metadata(&path).map(|m| m.len()).unwrap_or(0) == bytes.len() as u64
+            if path.is_file()
+                && fs::metadata(&path).map(|m| m.len()).unwrap_or(0) == bytes.len() as u64
             {
                 continue;
             }

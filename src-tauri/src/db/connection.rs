@@ -58,7 +58,9 @@ impl Connection {
     pub fn open_server(req: &ServerOpenRequest) -> AppResult<Self> {
         let url = req.url.trim().trim_end_matches('/').to_string();
         if url.is_empty() {
-            return Err(AppError::msg("Server URL is required (e.g. http://127.0.0.1:8453)"));
+            return Err(AppError::msg(
+                "Server URL is required (e.g. http://127.0.0.1:8453)",
+            ));
         }
         let mut builder = MongrelClient::builder(&url)
             .connect_timeout(std::time::Duration::from_secs(5))
@@ -447,7 +449,6 @@ fn server_run_sql(client: &MongrelClient, sql: &str, max_rows: usize) -> AppResu
 
 fn classify(sql: &str) -> String {
     let head = sql
-        .trim_start()
         .split_whitespace()
         .next()
         .unwrap_or("")
@@ -456,7 +457,7 @@ fn classify(sql: &str) -> String {
         "SELECT" | "WITH" | "EXPLAIN" | "SHOW" | "DESCRIBE" | "DESC" | "VALUES" => "query".into(),
         "INSERT" | "UPDATE" | "DELETE" | "MERGE" | "TRUNCATE" => "dml".into(),
         "CREATE" | "ALTER" | "DROP" | "RENAME" => "ddl".into(),
-        other if other.is_empty() => "empty".into(),
+        "" => "empty".into(),
         other => other.to_ascii_lowercase(),
     }
 }

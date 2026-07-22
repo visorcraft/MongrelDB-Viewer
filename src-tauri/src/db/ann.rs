@@ -43,9 +43,11 @@ pub async fn install_dense_ann(
     validate_ann_pair(algorithm, quantization)?;
     if quantization == "product" {
         let nsub = req.product_num_subvectors.ok_or_else(|| {
-            AppError::msg("product quantization requires productNumSubvectors (must divide dimension)")
+            AppError::msg(
+                "product quantization requires productNumSubvectors (must divide dimension)",
+            )
         })?;
-        if nsub == 0 || dim % u32::from(nsub) != 0 {
+        if nsub == 0 || !dim.is_multiple_of(u32::from(nsub)) {
             return Err(AppError::msg(format!(
                 "productNumSubvectors ({nsub}) must be > 0 and evenly divide dimension ({dim})"
             )));
@@ -83,7 +85,8 @@ pub async fn install_dense_ann(
     // Stamp configured_model source so native retrieve_text can resolve the provider
     // even before the ANN graph binds a live semantic identity.
     if req.source_text_column.is_some() {
-        let _ = stamp_embedding_source(db, &table, &emb_col, embeddings, Some(provider_id.as_str()));
+        let _ =
+            stamp_embedding_source(db, &table, &emb_col, embeddings, Some(provider_id.as_str()));
     }
     let text_col = req
         .source_text_column
@@ -94,8 +97,8 @@ pub async fn install_dense_ann(
 
     let mut rebuilt = false;
     if rebuild && has_ann {
-        let existing_name = existing_ann_index_name(db, &table, &emb_col)
-            .unwrap_or_else(|| index_name.clone());
+        let existing_name =
+            existing_ann_index_name(db, &table, &emb_col).unwrap_or_else(|| index_name.clone());
         index_name = existing_name.clone();
         let drop_sql = format!("DROP INDEX {existing_name} ON {table}");
         db.session
@@ -129,7 +132,8 @@ pub async fn install_dense_ann(
     }
 
     if !has_ann {
-        let sql = build_create_ann_sql(&index_name, &table, &emb_col, algorithm, quantization, &req)?;
+        let sql =
+            build_create_ann_sql(&index_name, &table, &emb_col, algorithm, quantization, &req)?;
         db.session
             .run(&sql)
             .await
@@ -234,9 +238,9 @@ fn build_create_ann_sql(
         _ => {}
     }
     if quantization == "product" {
-        let nsub = req.product_num_subvectors.ok_or_else(|| {
-            AppError::msg("product quantization requires productNumSubvectors")
-        })?;
+        let nsub = req
+            .product_num_subvectors
+            .ok_or_else(|| AppError::msg("product quantization requires productNumSubvectors"))?;
         let bits = req.product_bits.unwrap_or(8);
         with.push(format!("num_subvectors = {nsub}"));
         with.push(format!("bits_per_subvector = {bits}"));
@@ -399,9 +403,10 @@ fn ensure_embedding_column_and_check_ann(
         .iter()
         .find(|c| c.name == emb_col)
         .map(|c| c.id);
-    let has_ann = schema.indexes.iter().any(|idx| {
-        idx.kind == IndexKind::Ann && emb_id.is_some_and(|id| idx.column_id == id)
-    });
+    let has_ann = schema
+        .indexes
+        .iter()
+        .any(|idx| idx.kind == IndexKind::Ann && emb_id.is_some_and(|id| idx.column_id == id));
     Ok(has_ann)
 }
 
@@ -454,9 +459,10 @@ fn require_ann_surface(db: &DbSession, table: &str, emb_col: &str) -> AppResult<
         .iter()
         .find(|c| c.name == emb_col)
         .map(|c| c.id);
-    let has_ann = schema.indexes.iter().any(|idx| {
-        idx.kind == IndexKind::Ann && emb_id.is_some_and(|id| idx.column_id == id)
-    });
+    let has_ann = schema
+        .indexes
+        .iter()
+        .any(|idx| idx.kind == IndexKind::Ann && emb_id.is_some_and(|id| idx.column_id == id));
     if has_ann {
         return Ok(());
     }
@@ -466,6 +472,7 @@ fn require_ann_surface(db: &DbSession, table: &str, emb_col: &str) -> AppResult<
     )))
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn backfill_embeddings(
     db: &DbSession,
     embeddings: &EmbeddingHub,
@@ -566,7 +573,7 @@ pub fn plan_semantic_search(
     let k = req.k.unwrap_or(5).clamp(1, 1000);
     // Pull a wider HNSW candidate set, then exact-rerank down to k.
     let candidate_k = k.saturating_mul(20).clamp(k, 1000);
-    let emb = embeddings.embed(&[req.query.clone()], req.provider_id.as_deref())?;
+    let emb = embeddings.embed(std::slice::from_ref(&req.query), req.provider_id.as_deref())?;
     let vector = emb
         .vectors
         .into_iter()
@@ -634,15 +641,9 @@ fn apply_min_score(mut result: SqlResult, min_score: Option<f32>) -> SqlResult {
                 .unwrap_or(true);
         }
         if let (Some(s_idx), Some(k_idx)) = (score_idx, kind_idx) {
-            let kind = row
-                .get(k_idx)
-                .and_then(|v| v.as_str())
-                .unwrap_or("");
+            let kind = row.get(k_idx).and_then(|v| v.as_str()).unwrap_or("");
             if kind == "ann_cosine_distance" {
-                let dist = row
-                    .get(s_idx)
-                    .and_then(|v| v.as_f64())
-                    .unwrap_or(1.0) as f32;
+                let dist = row.get(s_idx).and_then(|v| v.as_f64()).unwrap_or(1.0) as f32;
                 return (1.0 - dist) >= threshold;
             }
         }
@@ -760,11 +761,7 @@ fn try_native_retrieve_text(
         model_id: prov.semantic_identity.model_id.clone(),
         model_version: prov.semantic_identity.model_version.clone(),
         dimension: prov.semantic_identity.dimension,
-        fingerprint_short: fp
-            .iter()
-            .take(8)
-            .map(|b| format!("{b:02x}"))
-            .collect(),
+        fingerprint_short: fp.iter().take(8).map(|b| format!("{b:02x}")).collect(),
         provider_registry_generation: prov.provider_registry_generation,
         embedding_column: req.embedding_column.clone(),
     };
@@ -819,7 +816,11 @@ fn embedding_column_id(db: &DbSession, table: &str, emb_col: &str) -> AppResult<
         .iter()
         .find(|c| c.name == emb_col)
         .map(|c| c.id)
-        .ok_or_else(|| AppError::msg(format!("embedding column `{emb_col}` not found on `{table}`")))
+        .ok_or_else(|| {
+            AppError::msg(format!(
+                "embedding column `{emb_col}` not found on `{table}`"
+            ))
+        })
 }
 
 fn hydrate_retrieve_hits(
@@ -859,9 +860,7 @@ fn hydrate_retrieve_hits(
             mongreldb_core::query::RetrieverScore::AnnCosineDistance(d) => {
                 ("ann_cosine_distance", f64::from(d))
             }
-            mongreldb_core::query::RetrieverScore::SparseDotProduct(v) => {
-                ("sparse_dot_product", v)
-            }
+            mongreldb_core::query::RetrieverScore::SparseDotProduct(v) => ("sparse_dot_product", v),
             mongreldb_core::query::RetrieverScore::MinHashEstimatedJaccard(v) => {
                 ("minhash_estimated_jaccard", f64::from(v))
             }
@@ -899,14 +898,21 @@ fn core_value_json(v: &Value) -> serde_json::Value {
         Value::Float64(f) => serde_json::json!(f),
         Value::Bytes(b) => match std::str::from_utf8(b) {
             Ok(s) => serde_json::json!(s),
-            Err(_) => serde_json::json!(format!("\\x{}", b.iter().map(|x| format!("{x:02x}")).collect::<String>())),
+            Err(_) => serde_json::json!(format!(
+                "\\x{}",
+                b.iter().map(|x| format!("{x:02x}")).collect::<String>()
+            )),
         },
         Value::Embedding(e) => serde_json::json!(format!("[{}d embedding]", e.len())),
         Value::GeneratedEmbedding(e) => {
             serde_json::json!(format!("[{}d generated embedding]", e.vector.len()))
         }
         Value::Decimal(d) => serde_json::json!(d.to_string()),
-        Value::Interval { months, days, nanos } => {
+        Value::Interval {
+            months,
+            days,
+            nanos,
+        } => {
             serde_json::json!(format!("interval({months}m {days}d {nanos}ns)"))
         }
         Value::Uuid(u) => {

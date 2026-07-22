@@ -1,6 +1,6 @@
 [package]
 name = "mongreldb-viewer"
-version = "1.4.1"
+version = "1.4.2"
 description = "MongrelDB Viewer - Signal Deck for AI-native columnar databases"
 authors = ["Visorcraft"]
 edition = "2021"

@@ -65,7 +65,8 @@ impl DbSession {
         let credentials_required = username.is_some();
         let database = match (mode, passphrase, username, password) {
             (OpenMode::Create, Some(pass), Some(user), Some(pw)) => {
-                Database::create_encrypted_with_credentials(&path, pass, user, pw).map_err(AppError::db)?
+                Database::create_encrypted_with_credentials(&path, pass, user, pw)
+                    .map_err(AppError::db)?
             }
             (OpenMode::Create, Some(pass), None, None) => {
                 Database::create_encrypted(&path, pass).map_err(AppError::db)?
@@ -82,7 +83,8 @@ impl DbSession {
                 }
             }
             (OpenMode::Open, Some(pass), Some(user), Some(pw)) => {
-                Database::open_encrypted_with_credentials(&path, pass, user, pw).map_err(AppError::db)?
+                Database::open_encrypted_with_credentials(&path, pass, user, pw)
+                    .map_err(AppError::db)?
             }
             (OpenMode::Open, Some(pass), None, None) => {
                 Database::open_encrypted(&path, pass).map_err(AppError::db)?
@@ -203,7 +205,13 @@ fn dense_ann_idx(name: &str, column_id: u16) -> IndexDef {
     }
 }
 
-fn fk(id: u16, name: &str, columns: Vec<u16>, ref_table: &str, ref_columns: Vec<u16>) -> ForeignKey {
+fn fk(
+    id: u16,
+    name: &str,
+    columns: Vec<u16>,
+    ref_table: &str,
+    ref_columns: Vec<u16>,
+) -> ForeignKey {
     ForeignKey {
         id,
         name: name.into(),
@@ -458,10 +466,17 @@ fn seed_demo_schema(db: &Database, with_ann: bool) -> Result<(), mongreldb_core:
     };
 
     db.transaction(|txn| {
-        txn.put("tenants", vec![(1, Value::Int64(1)), (2, bytes("acme")), (3, bytes("pro"))])?;
         txn.put(
             "tenants",
-            vec![(1, Value::Int64(2)), (2, bytes("globex")), (3, bytes("free"))],
+            vec![(1, Value::Int64(1)), (2, bytes("acme")), (3, bytes("pro"))],
+        )?;
+        txn.put(
+            "tenants",
+            vec![
+                (1, Value::Int64(2)),
+                (2, bytes("globex")),
+                (3, bytes("free")),
+            ],
         )?;
 
         for (id, tenant, name, role) in [
@@ -627,11 +642,7 @@ fn kit_schema_from_core_catalog(db: &Database) -> Result<KitSchema, mongreldb_co
 
         let mut foreign_keys = Vec::new();
         for fk in &entry.schema.constraints.foreign_keys {
-            let cols: Vec<String> = fk
-                .columns
-                .iter()
-                .filter_map(|id| col_name(*id))
-                .collect();
+            let cols: Vec<String> = fk.columns.iter().filter_map(|id| col_name(*id)).collect();
             // Resolve referenced column names from the catalog entry for that table.
             let ref_cols: Vec<String> = catalog_tables
                 .iter()

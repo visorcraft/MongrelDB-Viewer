@@ -87,8 +87,8 @@ impl McpServer {
                     .cloned()
                     .unwrap_or_else(|| json!({}));
                 let trace = self.executor.call(&name, arguments).await;
-                let text = serde_json::to_string_pretty(&trace.result)
-                    .unwrap_or_else(|_| "{}".into());
+                let text =
+                    serde_json::to_string_pretty(&trace.result).unwrap_or_else(|_| "{}".into());
                 JsonRpcResponse::ok(
                     id,
                     json!({
@@ -169,7 +169,11 @@ impl McpHandle {
             endpoint: self.endpoint.clone(),
             tools: tool_definitions()
                 .iter()
-                .filter_map(|t| t.get("name").and_then(|n| n.as_str()).map(|s| s.to_string()))
+                .filter_map(|t| {
+                    t.get("name")
+                        .and_then(|n| n.as_str())
+                        .map(|s| s.to_string())
+                })
                 .collect(),
             connections: self.server.connections.load(Ordering::Relaxed),
         }
@@ -182,27 +186,26 @@ impl McpHandle {
     }
 }
 
-pub async fn start_http(
-    executor: ToolExecutor,
-    host: &str,
-    port: u16,
-) -> AppResult<McpHandle> {
+pub async fn start_http(executor: ToolExecutor, host: &str, port: u16) -> AppResult<McpHandle> {
     let server = McpServer::new(executor);
     let state = server.clone();
 
     let app = Router::new()
-        .route("/", get(|| async { "MongrelDB Viewer MCP - POST /mcp for JSON-RPC" }))
-        .route("/health", get(|| async { Json(json!({"ok": true, "service": "mongreldb-viewer-mcp"})) }))
+        .route(
+            "/",
+            get(|| async { "MongrelDB Viewer MCP - POST /mcp for JSON-RPC" }),
+        )
+        .route(
+            "/health",
+            get(|| async { Json(json!({"ok": true, "service": "mongreldb-viewer-mcp"})) }),
+        )
         .route("/mcp", post(mcp_post))
         .route(
             "/sse",
             get(|| async {
                 // Minimal SSE hello so clients can probe the endpoint.
                 (
-                    [(
-                        axum::http::header::CONTENT_TYPE,
-                        "text/event-stream",
-                    )],
+                    [(axum::http::header::CONTENT_TYPE, "text/event-stream")],
                     "event: endpoint\ndata: /mcp\n\n",
                 )
                     .into_response()
@@ -279,7 +282,10 @@ pub async fn run_stdio(executor: ToolExecutor) -> AppResult<()> {
                     .write_all(b"\n")
                     .await
                     .map_err(|e| AppError::Mcp(e.to_string()))?;
-                stdout.flush().await.map_err(|e| AppError::Mcp(e.to_string()))?;
+                stdout
+                    .flush()
+                    .await
+                    .map_err(|e| AppError::Mcp(e.to_string()))?;
                 continue;
             }
         };
@@ -298,7 +304,10 @@ pub async fn run_stdio(executor: ToolExecutor) -> AppResult<()> {
             .write_all(b"\n")
             .await
             .map_err(|e| AppError::Mcp(e.to_string()))?;
-        stdout.flush().await.map_err(|e| AppError::Mcp(e.to_string()))?;
+        stdout
+            .flush()
+            .await
+            .map_err(|e| AppError::Mcp(e.to_string()))?;
     }
     Ok(())
 }

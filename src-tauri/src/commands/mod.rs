@@ -119,7 +119,10 @@ pub fn open_database(state: State<'_, AppState>, req: OpenRequest) -> AppResult<
 }
 
 #[tauri::command]
-pub fn open_server(state: State<'_, AppState>, req: ServerOpenRequest) -> AppResult<DatabaseOverview> {
+pub fn open_server(
+    state: State<'_, AppState>,
+    req: ServerOpenRequest,
+) -> AppResult<DatabaseOverview> {
     {
         let mut g = state.db.write();
         *g = None;
@@ -138,7 +141,10 @@ pub fn close_database(state: State<'_, AppState>) -> AppResult<()> {
 }
 
 #[tauri::command]
-pub fn create_demo(state: State<'_, AppState>, req: CreateDemoRequest) -> AppResult<DatabaseOverview> {
+pub fn create_demo(
+    state: State<'_, AppState>,
+    req: CreateDemoRequest,
+) -> AppResult<DatabaseOverview> {
     {
         let mut g = state.db.write();
         *g = None;
@@ -264,10 +270,7 @@ pub async fn reindex_database(
     let sql = match table {
         None => "REINDEX".to_string(),
         Some(name) => {
-            if !name
-                .chars()
-                .all(|c| c.is_ascii_alphanumeric() || c == '_')
-            {
+            if !name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') {
                 return Err(AppError::msg(format!(
                     "invalid table name {name:?}: use letters, digits, and underscore only"
                 )));
@@ -388,7 +391,11 @@ pub fn stop_mcp(state: State<'_, AppState>) -> AppResult<McpStatus> {
         endpoint: None,
         tools: crate::mcp::tools::tool_definitions()
             .iter()
-            .filter_map(|t| t.get("name").and_then(|n| n.as_str()).map(|s| s.to_string()))
+            .filter_map(|t| {
+                t.get("name")
+                    .and_then(|n| n.as_str())
+                    .map(|s| s.to_string())
+            })
             .collect(),
         connections: 0,
     })
@@ -406,7 +413,11 @@ pub fn mcp_status(state: State<'_, AppState>) -> McpStatus {
             endpoint: None,
             tools: crate::mcp::tools::tool_definitions()
                 .iter()
-                .filter_map(|t| t.get("name").and_then(|n| n.as_str()).map(|s| s.to_string()))
+                .filter_map(|t| {
+                    t.get("name")
+                        .and_then(|n| n.as_str())
+                        .map(|s| s.to_string())
+                })
                 .collect(),
             connections: 0,
         }

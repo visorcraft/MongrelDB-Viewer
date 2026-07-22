@@ -163,7 +163,9 @@ impl EmbeddingHub {
         {
             let g = self.inner.lock();
             if let Some(remote) = &g.remote {
-                if want == remote.provider_id || want == "remote" || want == "remote-openai-compatible"
+                if want == remote.provider_id
+                    || want == "remote"
+                    || want == "remote-openai-compatible"
                 {
                     let remote = remote.clone();
                     drop(g);
@@ -182,7 +184,10 @@ impl EmbeddingHub {
                 .as_ref()
                 .ok_or_else(|| AppError::Embedding("local model not loaded".into()))?;
             let vectors = local.embed(texts)?;
-            let dim = vectors.first().map(|v| v.len() as u32).unwrap_or(DEFAULT_DIM);
+            let dim = vectors
+                .first()
+                .map(|v| v.len() as u32)
+                .unwrap_or(DEFAULT_DIM);
             Ok(EmbedResponse {
                 vectors,
                 dimension: dim,
@@ -193,9 +198,7 @@ impl EmbeddingHub {
         #[cfg(not(feature = "local-embeddings"))]
         {
             let _ = want;
-            Err(AppError::Embedding(
-                "no embedding backend available".into(),
-            ))
+            Err(AppError::Embedding("no embedding backend available".into()))
         }
     }
 
@@ -235,7 +238,8 @@ impl EmbeddingHub {
         let want = provider_id.unwrap_or(DEFAULT_PROVIDER_ID);
         let g = self.inner.lock();
         if let Some(remote) = &g.remote {
-            if want == remote.provider_id || want == "remote" || want == "remote-openai-compatible" {
+            if want == remote.provider_id || want == "remote" || want == "remote-openai-compatible"
+            {
                 return mongreldb_core::EmbeddingSource::ConfiguredModel {
                     provider_id: remote.provider_id.clone(),
                     model_id: remote.model.clone(),
@@ -282,10 +286,9 @@ impl EmbeddingHub {
             .map_err(|e| AppError::Http(e.to_string()))?;
 
         let json: serde_json::Value = resp.json().map_err(|e| AppError::Http(e.to_string()))?;
-        let data = json
-            .get("data")
-            .and_then(|d| d.as_array())
-            .ok_or_else(|| AppError::Embedding("remote embeddings response missing data[]".into()))?;
+        let data = json.get("data").and_then(|d| d.as_array()).ok_or_else(|| {
+            AppError::Embedding("remote embeddings response missing data[]".into())
+        })?;
 
         let mut vectors = Vec::with_capacity(data.len());
         for item in data {

@@ -17,11 +17,7 @@ pub async fn build_insights(conn: &Connection) -> AppResult<DbInsights> {
 
     let total_rows: u64 = overview.tables.iter().map(|t| t.row_count).sum();
     let ann_tables = overview.tables.iter().filter(|t| t.has_ann).count();
-    let indexed = overview
-        .tables
-        .iter()
-        .map(|t| t.index_count)
-        .sum::<usize>();
+    let indexed = overview.tables.iter().map(|t| t.index_count).sum::<usize>();
 
     cards.push(InsightCard {
         title: "Tables".into(),
@@ -79,16 +75,15 @@ pub async fn build_insights(conn: &Connection) -> AppResult<DbInsights> {
                     detail.name
                 );
                 let title = format!("{} by {col}", detail.name);
-                let accent = if index_kind_on(&detail, &col).map(|k| k.contains("bitmap")).unwrap_or(false)
+                let accent = if index_kind_on(&detail, &col)
+                    .map(|k| k.contains("bitmap"))
+                    .unwrap_or(false)
                 {
                     "magenta"
                 } else {
                     "amber"
                 };
-                if probe(conn, &sql, &mut cards, &title, accent)
-                    .await
-                    .is_ok()
-                {
+                if probe(conn, &sql, &mut cards, &title, accent).await.is_ok() {
                     probes_done += 1;
                 }
             }
@@ -265,9 +260,7 @@ fn push_schema_recipes(suggested: &mut Vec<SuggestedQuery>, detail: &TableDetail
         suggested.push(SuggestedQuery {
             title: format!("Non-null {table}.{col}"),
             description: "Rows where column is present".into(),
-            sql: format!(
-                "SELECT {project_sql} FROM {table} WHERE {col} IS NOT NULL LIMIT 25"
-            ),
+            sql: format!("SELECT {project_sql} FROM {table} WHERE {col} IS NOT NULL LIMIT 25"),
             category: "filter".into(),
         });
     }
@@ -431,35 +424,13 @@ fn is_temporal_type(ty: &str) -> bool {
 
 fn looks_categorical(name: &str) -> bool {
     const KEYS: &[&str] = &[
-        "status",
-        "state",
-        "kind",
-        "type",
-        "category",
-        "class",
-        "role",
-        "level",
-        "tier",
-        "region",
-        "country",
-        "city",
-        "lang",
-        "locale",
-        "source",
-        "channel",
-        "priority",
-        "flag",
-        "mode",
-        "phase",
-        "stage",
-        "tenant",
-        "org",
-        "gender",
-        "currency",
-        "provider",
+        "status", "state", "kind", "type", "category", "class", "role", "level", "tier", "region",
+        "country", "city", "lang", "locale", "source", "channel", "priority", "flag", "mode",
+        "phase", "stage", "tenant", "org", "gender", "currency", "provider",
     ];
     let n = name.to_ascii_lowercase();
-    KEYS.iter().any(|k| n == *k || n.ends_with(&format!("_{k}")) || n.starts_with(&format!("{k}_")))
+    KEYS.iter()
+        .any(|k| n == *k || n.ends_with(&format!("_{k}")) || n.starts_with(&format!("{k}_")))
 }
 
 fn looks_like_score(name: &str) -> bool {
@@ -479,9 +450,25 @@ fn looks_like_id(name: &str) -> bool {
 
 fn looks_like_text_content(name: &str) -> bool {
     const KEYS: &[&str] = &[
-        "body", "text", "content", "title", "name", "description", "desc", "message",
-        "msg", "comment", "note", "summary", "label", "subject", "query", "prompt",
-        "path", "url", "email",
+        "body",
+        "text",
+        "content",
+        "title",
+        "name",
+        "description",
+        "desc",
+        "message",
+        "msg",
+        "comment",
+        "note",
+        "summary",
+        "label",
+        "subject",
+        "query",
+        "prompt",
+        "path",
+        "url",
+        "email",
     ];
     let n = name.to_ascii_lowercase();
     KEYS.iter().any(|k| n == *k || n.contains(k))
