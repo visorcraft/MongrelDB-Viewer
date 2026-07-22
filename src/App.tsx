@@ -772,8 +772,14 @@ export default function App() {
         minScore: annMinScore > 0 ? annMinScore : undefined,
       });
       setAnnResult(res);
+      const mode =
+        res.searchMode === "native_retrieve_text"
+          ? "native retrieve_text"
+          : res.searchMode === "sql_ann_exact"
+            ? "SQL ann_search_exact"
+            : "search";
       setOk(
-        `Top-${k} on \`${table}\` · minScore ${annMinScore || "off"} · ${res.rowCount} hits · ${res.elapsedMs} ms`,
+        `Top-${k} on \`${table}\` · ${mode} · minScore ${annMinScore || "off"} · ${res.rowCount} hits · ${res.elapsedMs} ms`,
       );
     });
 
@@ -1856,6 +1862,7 @@ function TableView({
                       <th>Kind</th>
                       <th>Column</th>
                       <th>Options</th>
+                      <th>Semantic identity</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1871,6 +1878,9 @@ function TableView({
                             (i.ann
                               ? prettyQuantization(i.ann.quantization)
                               : "—")}
+                        </td>
+                        <td className="muted" title={i.semanticIdentity ?? undefined}>
+                          {i.semanticIdentity || "—"}
                         </td>
                       </tr>
                     ))}
@@ -2186,10 +2196,13 @@ function AnnView(props: {
           </div>
           <div className="panel-body ann-search-form">
             <p className="field-lede">
-              Top-k nearest neighbors with exact cosine rerank — not a keyword filter.
+              Top-k nearest neighbors via MongrelDB&apos;s engine-native{" "}
+              <code>retrieve_text</code> (0.64+): text → embed under the bound{" "}
+              <strong>semantic identity</strong> → ANN, with cryptographic model
+              provenance. Falls back to SQL <code>ann_search_exact</code> when needed.
               Weak hits fall away below the min score.
               {activeQuant === "dense"
-                ? " Dense ANN also scores with cosine distance inside HNSW."
+                ? " Dense ANN scores with cosine distance inside HNSW."
                 : activeQuant === "binary_sign"
                   ? " BinarySign HNSW prefilters with Hamming; rerank restores cosine order."
                   : null}
@@ -2244,7 +2257,7 @@ function AnnView(props: {
                     : "Install ANN on this table before searching"
                 }
               >
-                Search (ANN + exact rerank)
+                Search (retrieve_text + ANN)
               </button>
             </div>
             {!annReady && (
@@ -2262,12 +2275,27 @@ function AnnView(props: {
             <h2>Hits</h2>
             <span className="muted">
               {props.result.rowCount} · {props.result.elapsedMs} ms
-              {props.result.columns.some((c) => c === "exact_score")
-                ? " · ranked by exact_score"
-                : ""}
+              {props.result.searchMode === "native_retrieve_text"
+                ? " · native retrieve_text"
+                : props.result.searchMode === "sql_ann_exact"
+                  ? " · SQL ann_search_exact"
+                  : props.result.columns.some((c) => c === "exact_score")
+                    ? " · ranked by exact_score"
+                    : ""}
             </span>
           </div>
           <div className="panel-body">
+            {props.result.provenance && (
+              <div className="field-lede" style={{ marginBottom: 12 }}>
+                <strong>Semantic identity</strong>{" "}
+                <span className="muted">
+                  {props.result.provenance.providerId} / {props.result.provenance.modelId} @{" "}
+                  {props.result.provenance.modelVersion} · {props.result.provenance.dimension}-d ·
+                  fp <code>{props.result.provenance.fingerprintShort}</code> · registry gen{" "}
+                  {props.result.provenance.providerRegistryGeneration}
+                </span>
+              </div>
+            )}
             <DataTable columns={props.result.columns} rows={props.result.rows} />
           </div>
         </div>

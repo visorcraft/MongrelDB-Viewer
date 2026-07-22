@@ -53,7 +53,7 @@ pub fn tool_definitions() -> Vec<Value> {
         ),
         tool(
             "semantic_search",
-            "Dense ANN semantic search using a query string (requires embedding column + ANN index).",
+            "Dense ANN semantic search using a query string (requires embedding column + ANN index). Prefers MongrelDB 0.64 native retrieve_text with semantic-identity provenance; falls back to SQL ann_search_exact.",
             json!({
                 "type": "object",
                 "properties": {

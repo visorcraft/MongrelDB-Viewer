@@ -199,6 +199,57 @@ impl EmbeddingHub {
         }
     }
 
+    /// Register the active Viewer embedding backend on a Direct `Database` so
+    /// engine-native surfaces (`retrieve_text`, semantic identity binding) can
+    /// resolve the same MiniLM/remote provider the Viewer uses for install.
+    pub fn register_on_database(&self, db: &mongreldb_core::Database) -> AppResult<()> {
+        let providers = self.list_providers();
+        let ready = providers
+            .into_iter()
+            .find(|p| p.health == "ready")
+            .ok_or_else(|| {
+                AppError::Embedding(
+                    "no ready embedding provider — load MiniLM or configure a remote endpoint"
+                        .into(),
+                )
+            })?;
+
+        let provider: Arc<dyn mongreldb_core::EmbeddingProvider> =
+            Arc::new(ViewerEmbeddingProvider {
+                hub: self.clone(),
+                provider_id: ready.provider_id.clone(),
+                model_id: ready.model_id.clone(),
+                model_version: ready.model_version.clone(),
+                dimension: ready.dimension,
+            });
+
+        match db.embedding_providers().register_new(provider) {
+            Ok(_) => Ok(()),
+            Err(mongreldb_core::EmbeddingError::ProviderAlreadyRegistered(_)) => Ok(()),
+            Err(e) => Err(AppError::Embedding(e.to_string())),
+        }
+    }
+
+    /// Catalog source metadata for embedding columns written by this Viewer.
+    pub fn configured_source(&self, provider_id: Option<&str>) -> mongreldb_core::EmbeddingSource {
+        let want = provider_id.unwrap_or(DEFAULT_PROVIDER_ID);
+        let g = self.inner.lock();
+        if let Some(remote) = &g.remote {
+            if want == remote.provider_id || want == "remote" || want == "remote-openai-compatible" {
+                return mongreldb_core::EmbeddingSource::ConfiguredModel {
+                    provider_id: remote.provider_id.clone(),
+                    model_id: remote.model.clone(),
+                    model_version: "remote".into(),
+                };
+            }
+        }
+        mongreldb_core::EmbeddingSource::ConfiguredModel {
+            provider_id: DEFAULT_PROVIDER_ID.into(),
+            model_id: DEFAULT_MODEL_ID.into(),
+            model_version: DEFAULT_MODEL_VERSION.into(),
+        }
+    }
+
     fn embed_remote(&self, cfg: &RemoteEmbedConfig, texts: &[String]) -> AppResult<EmbedResponse> {
         let base = cfg.base_url.trim_end_matches('/');
         let url = if base.ends_with("/embeddings") {
@@ -260,6 +311,50 @@ impl EmbeddingHub {
             provider_id: cfg.provider_id.clone(),
             model_id: cfg.model.clone(),
         })
+    }
+}
+
+/// Bridges [`EmbeddingHub`] into MongrelDB's process-local provider registry
+/// (0.64 semantic identity + `retrieve_text`).
+struct ViewerEmbeddingProvider {
+    hub: EmbeddingHub,
+    provider_id: String,
+    model_id: String,
+    model_version: String,
+    dimension: u32,
+}
+
+impl mongreldb_core::EmbeddingProvider for ViewerEmbeddingProvider {
+    fn provider_id(&self) -> &str {
+        &self.provider_id
+    }
+    fn model_id(&self) -> &str {
+        &self.model_id
+    }
+    fn model_version(&self) -> &str {
+        &self.model_version
+    }
+    fn dimension(&self) -> u32 {
+        self.dimension
+    }
+    fn normalization(&self) -> mongreldb_core::EmbeddingNormalization {
+        mongreldb_core::EmbeddingNormalization::None
+    }
+    fn preprocessing_version(&self) -> &str {
+        "viewer-1"
+    }
+    fn embed(
+        &self,
+        request: mongreldb_core::EmbeddingRequest<'_>,
+    ) -> Result<mongreldb_core::EmbeddingResponse, mongreldb_core::EmbeddingError> {
+        let texts: Vec<String> = request.texts.iter().map(|s| (*s).to_string()).collect();
+        match self.hub.embed(&texts, Some(&self.provider_id)) {
+            Ok(r) => Ok(mongreldb_core::EmbeddingResponse { vectors: r.vectors }),
+            Err(e) => Err(mongreldb_core::EmbeddingError::ProviderFailed {
+                provider: self.provider_id.clone(),
+                message: e.to_string(),
+            }),
+        }
     }
 }
 

@@ -82,6 +82,20 @@ export type IndexInfo = {
   ann?: AnnIndexOptions | null;
   /** Short human summary of kind-specific options. */
   optionsSummary?: string | null;
+  /** 0.64+ bound semantic identity (provider / model · fingerprint). */
+  semanticIdentity?: string | null;
+};
+
+/** Provenance from engine-native retrieve_text (MongrelDB 0.64+). */
+export type SearchProvenance = {
+  providerId: string;
+  providerVersion: string;
+  modelId: string;
+  modelVersion: string;
+  dimension: number;
+  fingerprintShort: string;
+  providerRegistryGeneration: number;
+  embeddingColumn: string;
 };
 
 export type IndexRadar = {
@@ -100,6 +114,10 @@ export type SqlResult = {
   truncated: boolean;
   elapsedMs: number;
   statementKind: string;
+  /** "native_retrieve_text" | "sql_ann_exact" when from semantic search. */
+  searchMode?: string | null;
+  /** Present for engine-native retrieve_text (0.64+). */
+  provenance?: SearchProvenance | null;
 };
 
 export type ProviderInfo = {

@@ -98,6 +98,8 @@ pub async fn run_sql_session(session: Arc<MongrelSession>, req: SqlRequest) -> A
         truncated,
         elapsed_ms: started.elapsed().as_millis() as u64,
         statement_kind: kind,
+        search_mode: None,
+        provenance: None,
     })
 }
 

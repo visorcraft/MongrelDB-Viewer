@@ -56,9 +56,10 @@ GitHub.
 | `assets/` | README / marketing images |
 | `public/` | Web assets (favicon, helmet icons) |
 
-MongrelDB engine crates (`mongreldb-core`, `mongreldb-query`, `mongreldb-client`)
-come from **crates.io** - do not re-implement storage, WAL, or ANN logic in the
-viewer. Prefer engine APIs and SQL surfaces.
+MongrelDB engine crates (`mongreldb-core`, `mongreldb-query`, `mongreldb-client`,
+`mongreldb-kit`) come from **crates.io** - do not re-implement storage, WAL, or
+ANN logic in the viewer. Prefer engine APIs and SQL surfaces. Keep the
+`mongreldb-*` train versions aligned when upgrading.
 
 ## Prerequisites
 

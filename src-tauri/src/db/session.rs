@@ -3,13 +3,22 @@ use std::sync::Arc;
 
 use mongreldb_core::constraint::{ForeignKey, TableConstraints};
 use mongreldb_core::schema::{
-    AnnOptions, AnnQuantization, ColumnDef, ColumnFlags, IndexDef, IndexKind, IndexOptions, Schema,
-    TypeId,
+    AnnAlgorithm as CoreAnnAlgorithm, AnnOptions, AnnQuantization as CoreAnnQuantization,
+    ColumnDef, ColumnFlags, IndexDef, IndexKind as CoreIndexKind, IndexOptions, Schema, TypeId,
 };
-use mongreldb_core::{Database, Value};
+use mongreldb_core::{Database, EmbeddingSource, Value};
+use mongreldb_kit::{
+    AnnAlgorithm as KitAnnAlgorithm, AnnQuantization as KitAnnQuantization, Column as KitColumn,
+    ColumnType as KitColumnType, ForeignKey as KitForeignKey, ForeignKeyAction as KitFkAction,
+    Index as KitIndex, IndexKind as KitIndexKind, Schema as KitSchema, Table as KitTable,
+};
 use mongreldb_query::MongrelSession;
 
 use crate::error::{AppError, AppResult};
+
+/// Sidecar file written next to the engine root so Kit-backed clients (Mongrel
+/// desktop, Kit HTTP, etc.) can open databases created by this Viewer.
+const KIT_SCHEMA_FILE: &str = "kit_schema.json";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OpenMode {
@@ -125,19 +134,32 @@ impl DbSession {
 
         let db = Database::create(path).map_err(AppError::db)?;
         seed_demo_schema(&db, with_ann).map_err(AppError::db)?;
+        // Core create alone leaves no kit_schema.json. Kit-backed clients
+        // (notably Mongrel) refuse to open a root without that sidecar.
+        write_kit_schema_sidecar(path, &db)?;
         drop(db);
         Self::open(path, None, None, None, OpenMode::Open)
     }
 }
 
 fn col(id: u16, name: &str, ty: TypeId, flags: ColumnFlags) -> ColumnDef {
+    col_with_source(id, name, ty, flags, None)
+}
+
+fn col_with_source(
+    id: u16,
+    name: &str,
+    ty: TypeId,
+    flags: ColumnFlags,
+    embedding_source: Option<EmbeddingSource>,
+) -> ColumnDef {
     ColumnDef {
         id,
         name: name.into(),
         ty,
         flags,
         default_value: None,
-        embedding_source: None,
+        embedding_source,
     }
 }
 
@@ -150,7 +172,7 @@ fn pk(id: u16, name: &str) -> ColumnDef {
     )
 }
 
-fn idx(name: &str, column_id: u16, kind: IndexKind) -> IndexDef {
+fn idx(name: &str, column_id: u16, kind: CoreIndexKind) -> IndexDef {
     IndexDef {
         name: name.into(),
         column_id,
@@ -166,14 +188,14 @@ fn dense_ann_idx(name: &str, column_id: u16) -> IndexDef {
     IndexDef {
         name: name.into(),
         column_id,
-        kind: IndexKind::Ann,
+        kind: CoreIndexKind::Ann,
         predicate: None,
         options: IndexOptions {
             ann: Some(AnnOptions {
                 m: 16,
                 ef_construction: 64,
                 ef_search: 64,
-                quantization: AnnQuantization::Dense,
+                quantization: CoreAnnQuantization::Dense,
                 ..Default::default()
             }),
             ..IndexOptions::default()
@@ -214,7 +236,7 @@ fn seed_demo_schema(db: &Database, with_ann: bool) -> Result<(), mongreldb_core:
                 col(2, "name", TypeId::Bytes, ColumnFlags::empty()),
                 col(3, "plan", TypeId::Bytes, ColumnFlags::empty()),
             ],
-            indexes: vec![idx("tenants_plan_bm", 3, IndexKind::Bitmap)],
+            indexes: vec![idx("tenants_plan_bm", 3, CoreIndexKind::Bitmap)],
             ..Schema::default()
         },
     )?;
@@ -229,8 +251,8 @@ fn seed_demo_schema(db: &Database, with_ann: bool) -> Result<(), mongreldb_core:
                 col(4, "role", TypeId::Bytes, ColumnFlags::empty()),
             ],
             indexes: vec![
-                idx("authors_tenant_bm", 2, IndexKind::Bitmap),
-                idx("authors_role_bm", 4, IndexKind::Bitmap),
+                idx("authors_tenant_bm", 2, CoreIndexKind::Bitmap),
+                idx("authors_role_bm", 4, CoreIndexKind::Bitmap),
             ],
             constraints: TableConstraints {
                 foreign_keys: vec![fk(1, "authors_tenant_fk", vec![2], "tenants", vec![1])],
@@ -249,18 +271,25 @@ fn seed_demo_schema(db: &Database, with_ann: bool) -> Result<(), mongreldb_core:
         col(6, "score", TypeId::Float64, ColumnFlags::empty()),
     ];
     let mut doc_indexes = vec![
-        idx("docs_tenant_bm", 2, IndexKind::Bitmap),
-        idx("docs_author_bm", 3, IndexKind::Bitmap),
-        idx("docs_body_fm", 4, IndexKind::FmIndex),
-        idx("docs_status_bm", 5, IndexKind::Bitmap),
-        idx("docs_score_pgm", 6, IndexKind::LearnedRange),
+        idx("docs_tenant_bm", 2, CoreIndexKind::Bitmap),
+        idx("docs_author_bm", 3, CoreIndexKind::Bitmap),
+        idx("docs_body_fm", 4, CoreIndexKind::FmIndex),
+        idx("docs_status_bm", 5, CoreIndexKind::Bitmap),
+        idx("docs_score_pgm", 6, CoreIndexKind::LearnedRange),
     ];
     if with_ann {
-        doc_cols.push(col(
+        // 0.64+: stamp configured_model so native retrieve_text can resolve
+        // the Viewer's MiniLM provider after register_on_database.
+        doc_cols.push(col_with_source(
             7,
             "embedding",
             TypeId::Embedding { dim: 384 },
             ColumnFlags::empty().with(ColumnFlags::NULLABLE),
+            Some(EmbeddingSource::ConfiguredModel {
+                provider_id: crate::embeddings::DEFAULT_PROVIDER_ID.into(),
+                model_id: crate::embeddings::DEFAULT_MODEL_ID.into(),
+                model_version: crate::embeddings::DEFAULT_MODEL_VERSION.into(),
+            }),
         ));
         doc_indexes.push(dense_ann_idx("docs_ann", 7));
     }
@@ -292,10 +321,10 @@ fn seed_demo_schema(db: &Database, with_ann: bool) -> Result<(), mongreldb_core:
                 col(6, "ts", TypeId::Int64, ColumnFlags::empty()),
             ],
             indexes: vec![
-                idx("events_document_bm", 2, IndexKind::Bitmap),
-                idx("events_tenant_bm", 3, IndexKind::Bitmap),
-                idx("events_kind_bm", 4, IndexKind::Bitmap),
-                idx("events_ts_pgm", 6, IndexKind::LearnedRange),
+                idx("events_document_bm", 2, CoreIndexKind::Bitmap),
+                idx("events_tenant_bm", 3, CoreIndexKind::Bitmap),
+                idx("events_kind_bm", 4, CoreIndexKind::Bitmap),
+                idx("events_ts_pgm", 6, CoreIndexKind::LearnedRange),
             ],
             constraints: TableConstraints {
                 foreign_keys: vec![
@@ -315,7 +344,7 @@ fn seed_demo_schema(db: &Database, with_ann: bool) -> Result<(), mongreldb_core:
                 pk(1, "id"),
                 col(2, "name", TypeId::Bytes, ColumnFlags::empty()),
             ],
-            indexes: vec![idx("tags_name_bm", 2, IndexKind::Bitmap)],
+            indexes: vec![idx("tags_name_bm", 2, CoreIndexKind::Bitmap)],
             ..Schema::default()
         },
     )?;
@@ -329,8 +358,8 @@ fn seed_demo_schema(db: &Database, with_ann: bool) -> Result<(), mongreldb_core:
                 col(3, "tag_id", TypeId::Int64, ColumnFlags::empty()),
             ],
             indexes: vec![
-                idx("dt_document_bm", 2, IndexKind::Bitmap),
-                idx("dt_tag_bm", 3, IndexKind::Bitmap),
+                idx("dt_document_bm", 2, CoreIndexKind::Bitmap),
+                idx("dt_tag_bm", 3, CoreIndexKind::Bitmap),
             ],
             constraints: TableConstraints {
                 foreign_keys: vec![
@@ -542,6 +571,205 @@ fn seed_demo_schema(db: &Database, with_ann: bool) -> Result<(), mongreldb_core:
     Ok(())
 }
 
+/// Persist a Kit schema sidecar derived from the live core catalog so Kit
+/// clients can open this root. Application tables only (skip `__kit_*`).
+fn write_kit_schema_sidecar(path: &Path, db: &Database) -> AppResult<()> {
+    let schema = kit_schema_from_core_catalog(db).map_err(AppError::db)?;
+    let json = serde_json::to_string_pretty(&schema)
+        .map_err(|e| AppError::msg(format!("serialize kit_schema.json: {e}")))?;
+    std::fs::write(path.join(KIT_SCHEMA_FILE), json)
+        .map_err(|e| AppError::msg(format!("write kit_schema.json: {e}")))?;
+    Ok(())
+}
+
+fn kit_schema_from_core_catalog(db: &Database) -> Result<KitSchema, mongreldb_core::MongrelError> {
+    let catalog = db.catalog_snapshot();
+    // Keep a full slice for FK parent column-name resolution while we build.
+    let catalog_tables = catalog.tables;
+    let mut tables = Vec::new();
+    for entry in &catalog_tables {
+        if entry.name.starts_with("__kit_") {
+            continue;
+        }
+        let mut columns = Vec::new();
+        let mut primary_key = Vec::new();
+        for col in &entry.schema.columns {
+            let (storage, emb_dim) = core_type_to_kit(&col.ty);
+            let is_pk = col.flags.contains(ColumnFlags::PRIMARY_KEY);
+            let nullable = col.flags.contains(ColumnFlags::NULLABLE) || !is_pk;
+            let mut kit_col = KitColumn::new(col.id as u32, col.name.clone(), storage);
+            kit_col.nullable = nullable && !is_pk;
+            kit_col.primary_key = is_pk;
+            kit_col.embedding_dim = emb_dim;
+            if is_pk {
+                kit_col.nullable = false;
+                primary_key.push(col.name.clone());
+            }
+            columns.push(kit_col);
+        }
+
+        let col_name = |id: u16| -> Option<String> {
+            entry
+                .schema
+                .columns
+                .iter()
+                .find(|c| c.id == id)
+                .map(|c| c.name.clone())
+        };
+
+        let mut indexes = Vec::new();
+        for idx in &entry.schema.indexes {
+            let Some(col_name) = col_name(idx.column_id) else {
+                continue;
+            };
+            indexes.push(kit_index_from_core(idx, col_name));
+        }
+
+        let mut foreign_keys = Vec::new();
+        for fk in &entry.schema.constraints.foreign_keys {
+            let cols: Vec<String> = fk
+                .columns
+                .iter()
+                .filter_map(|id| col_name(*id))
+                .collect();
+            // Resolve referenced column names from the catalog entry for that table.
+            let ref_cols: Vec<String> = catalog_tables
+                .iter()
+                .find(|t| t.name == fk.ref_table)
+                .map(|parent| {
+                    fk.ref_columns
+                        .iter()
+                        .filter_map(|id| {
+                            parent
+                                .schema
+                                .columns
+                                .iter()
+                                .find(|c| c.id == *id)
+                                .map(|c| c.name.clone())
+                        })
+                        .collect()
+                })
+                .unwrap_or_default();
+            if cols.is_empty() || ref_cols.is_empty() {
+                continue;
+            }
+            foreign_keys.push(KitForeignKey {
+                name: fk.name.clone(),
+                columns: cols,
+                references_table: fk.ref_table.clone(),
+                references_columns: ref_cols,
+                on_delete: KitFkAction::Restrict,
+            });
+        }
+
+        tables.push(KitTable {
+            id: entry.table_id as u32,
+            name: entry.name.clone(),
+            columns,
+            primary_key,
+            indexes,
+            foreign_keys,
+            unique_constraints: vec![],
+            check_constraints: vec![],
+        });
+    }
+    KitSchema::new(tables).map_err(|e| mongreldb_core::MongrelError::Schema(e.to_string()))
+}
+
+fn core_type_to_kit(ty: &TypeId) -> (KitColumnType, Option<u32>) {
+    match ty {
+        TypeId::Bool => (KitColumnType::Bool, None),
+        TypeId::Int8 => (KitColumnType::Int8, None),
+        TypeId::Int16 => (KitColumnType::Int16, None),
+        TypeId::Int32 => (KitColumnType::Int32, None),
+        TypeId::Int64 => (KitColumnType::Int64, None),
+        TypeId::UInt8 | TypeId::UInt16 | TypeId::UInt32 | TypeId::UInt64 => {
+            // Kit has no unsigned variants; store as signed peer of same width.
+            match ty {
+                TypeId::UInt8 => (KitColumnType::Int8, None),
+                TypeId::UInt16 => (KitColumnType::Int16, None),
+                TypeId::UInt32 => (KitColumnType::Int32, None),
+                _ => (KitColumnType::Int64, None),
+            }
+        }
+        TypeId::Float32 => (KitColumnType::Float32, None),
+        TypeId::Float64 => (KitColumnType::Float64, None),
+        // Demo + Viewer treat UTF-8 strings as TypeId::Bytes; Kit's Text is the
+        // application-facing equivalent (still Bytes on the wire).
+        TypeId::Bytes => (KitColumnType::Text, None),
+        TypeId::Json => (KitColumnType::Json, None),
+        TypeId::Date32 => (KitColumnType::Date, None),
+        TypeId::Date64 => (KitColumnType::Date64, None),
+        TypeId::TimestampNanos => (KitColumnType::TimestampNanos, None),
+        TypeId::Time64 => (KitColumnType::Time64, None),
+        TypeId::Interval => (KitColumnType::Interval, None),
+        TypeId::Uuid => (KitColumnType::Uuid, None),
+        TypeId::Decimal128 { .. } => (KitColumnType::Decimal128, None),
+        TypeId::Array { .. } => (KitColumnType::Array, None),
+        TypeId::Embedding { dim } => (KitColumnType::Embedding, Some(*dim)),
+        TypeId::Enum { .. } => (KitColumnType::Text, None),
+    }
+}
+
+fn kit_index_from_core(idx: &IndexDef, column_name: String) -> KitIndex {
+    let kind = match idx.kind {
+        CoreIndexKind::Bitmap => KitIndexKind::Bitmap,
+        CoreIndexKind::FmIndex => KitIndexKind::Fm,
+        CoreIndexKind::Ann => KitIndexKind::Ann,
+        CoreIndexKind::LearnedRange => KitIndexKind::LearnedRange,
+        CoreIndexKind::MinHash => KitIndexKind::MinHash,
+        CoreIndexKind::Sparse => KitIndexKind::Sparse,
+    };
+    let mut kit = KitIndex {
+        name: idx.name.clone(),
+        columns: vec![column_name],
+        unique: false,
+        kind,
+        ..Default::default()
+    };
+    if let Some(ann) = &idx.options.ann {
+        kit.ann_quantization = match ann.quantization {
+            CoreAnnQuantization::BinarySign => KitAnnQuantization::BinarySign,
+            CoreAnnQuantization::Dense => KitAnnQuantization::Dense,
+            CoreAnnQuantization::Product {
+                num_subvectors,
+                bits,
+            } => KitAnnQuantization::Product {
+                num_subvectors,
+                bits,
+            },
+        };
+        kit.ann_algorithm = match ann.algorithm {
+            CoreAnnAlgorithm::Hnsw => KitAnnAlgorithm::Hnsw,
+            CoreAnnAlgorithm::DiskAnn => KitAnnAlgorithm::DiskAnn,
+            CoreAnnAlgorithm::Ivf => KitAnnAlgorithm::Ivf,
+        };
+        kit.ann_m = Some(ann.m);
+        kit.ann_ef_construction = Some(ann.ef_construction);
+        kit.ann_ef_search = Some(ann.ef_search);
+        if let Some(diskann) = &ann.diskann {
+            kit.ann_diskann_r = Some(diskann.r);
+            kit.ann_diskann_l = Some(diskann.l);
+            kit.ann_diskann_beam_width = Some(diskann.beam_width);
+            kit.ann_diskann_alpha = Some(diskann.alpha);
+        }
+        if let Some(ivf) = &ann.ivf {
+            kit.ann_ivf_nlist = Some(ivf.nlist);
+            kit.ann_ivf_nprobe = Some(ivf.nprobe);
+            kit.ann_ivf_training_samples = Some(ivf.training_samples);
+        }
+        if let Some(product) = &ann.product {
+            kit.ann_pq_training_samples = Some(product.training_samples);
+            kit.ann_pq_seed = Some(product.seed);
+            kit.ann_pq_rerank_factor = Some(product.rerank_factor);
+        }
+    }
+    if let Some(minhash) = &idx.options.minhash {
+        kit.minhash_permutations = Some(minhash.permutations);
+    }
+    kit
+}
+
 /// True if `path` already contains MongrelDB storage markers.
 fn looks_like_mongreldb(path: &Path) -> bool {
     if !path.is_dir() {
@@ -569,5 +797,57 @@ fn open_existing(
         }
         (None, None, None) => Database::open(path).map_err(AppError::db),
         _ => Err(AppError::msg("invalid credential combination")),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::atomic::{AtomicU64, Ordering};
+
+    fn unique_demo_dir() -> PathBuf {
+        static N: AtomicU64 = AtomicU64::new(0);
+        let n = N.fetch_add(1, Ordering::Relaxed);
+        let dir = std::env::temp_dir().join(format!(
+            "mongreldb-viewer-demo-{}-{}",
+            std::process::id(),
+            n
+        ));
+        let _ = std::fs::remove_dir_all(&dir);
+        dir
+    }
+
+    #[test]
+    fn create_demo_writes_kit_schema_openable_by_kit() {
+        let path = unique_demo_dir();
+        // with_ann=false avoids embedding model download in CI/offline.
+        let session = DbSession::create_demo(&path, false).expect("create demo");
+        drop(session);
+
+        assert!(
+            path.join(KIT_SCHEMA_FILE).is_file(),
+            "demo root must include {KIT_SCHEMA_FILE} for Kit/Mongrel clients"
+        );
+
+        let kit = mongreldb_kit::Database::open(&path).expect("kit open demo root");
+        let mut names = kit.table_names();
+        names.sort();
+        assert_eq!(
+            names,
+            vec![
+                "authors".to_string(),
+                "document_tags".to_string(),
+                "documents".to_string(),
+                "events".to_string(),
+                "tags".to_string(),
+                "tenants".to_string(),
+            ]
+        );
+        let rows = kit
+            .sql_rows("SELECT count(*) AS c FROM documents")
+            .expect("count documents");
+        assert_eq!(rows[0].get("c").and_then(|v| v.as_i64()), Some(8));
+
+        let _ = std::fs::remove_dir_all(&path);
     }
 }

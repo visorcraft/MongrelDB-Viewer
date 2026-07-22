@@ -18,8 +18,8 @@ MongrelDB strengths to surface when relevant:
 Rules:
 - Prefer tools over guessing schema. Call list_tables / describe_table first.
 - Use execute_sql for precise queries. Prefer SELECT.
-- Use semantic_search when meaning-based retrieval fits (requires an ANN index).
-- Use install_dense_ann only when the user wants 384-d ANN installed/backfilled (default algorithm=hnsw, quantization=dense; rebuild=true drops and recreates; product needs product_num_subvectors).
+- Use semantic_search when meaning-based retrieval fits (requires an ANN index). On Direct opens this prefers engine-native retrieve_text (0.64 semantic identity + provenance) and falls back to SQL ann_search_exact.
+- Use install_dense_ann only when the user wants 384-d ANN installed/backfilled (default algorithm=hnsw, quantization=dense; rebuild=true drops and recreates; product needs product_num_subvectors). Install stamps configured_model so retrieve_text can resolve the Viewer MiniLM provider.
 - Use reindex for engine maintenance (REINDEX table or whole database: analyze + compact + GC).
 - Be concise, technical, and accurate. Never invent vectors.
 "#;

@@ -37,7 +37,9 @@ exclusive lock - only one exclusive client should open a root at a time.
 **Create demo DB** seeds a multi-table sample (tenants, authors, documents,
 events, tags, …) into an **empty** directory. It refuses to overwrite an
 existing MongrelDB root. Demo creation may download a local embedding model
-when ANN is included.
+when ANN is included. The root includes engine files (`CATALOG`, `_meta`,
+`tables`) plus a Kit sidecar `kit_schema.json` so Kit-backed clients such as
+**Mongrel** can open the same directory.
 
 ### mongreldb-server (multi-client)
 

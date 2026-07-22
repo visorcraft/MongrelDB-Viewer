@@ -1,10 +1,14 @@
-use mongreldb_core::schema::{ColumnFlags, IndexKind, TypeId};
+use mongreldb_core::schema::{AlterColumn, ColumnFlags, IndexKind, TypeId};
+use mongreldb_core::{EmbeddingSource, TextSearchOptions, Value};
 
 use crate::db::session::DbSession;
 use crate::db::sql::run_sql;
 use crate::embeddings::{EmbeddingHub, DEFAULT_DIM, DEFAULT_PROVIDER_ID};
 use crate::error::{AppError, AppResult};
-use crate::models::{InstallAnnRequest, InstallAnnResult, SemanticSearchRequest, SqlRequest};
+use crate::models::{
+    InstallAnnRequest, InstallAnnResult, SearchProvenance, SemanticSearchRequest, SqlRequest,
+    SqlResult,
+};
 
 /// Install an ANN surface on a table.
 ///
@@ -68,10 +72,19 @@ pub async fn install_dense_ann(
     if req.source_text_column.is_some() && provider_id == DEFAULT_PROVIDER_ID {
         embeddings.ensure_local_default()?;
     }
+    // Register on the engine so 0.64 retrieve_text / semantic identity can resolve.
+    if req.source_text_column.is_some() {
+        let _ = embeddings.register_on_database(&db.database);
+    }
 
     // Mutate schema synchronously; no awaits while table guards are live.
     // ANN presence is durable in the table schema - survives close/reopen.
     let mut has_ann = ensure_embedding_column_and_check_ann(db, &table, &emb_col, dim)?;
+    // Stamp configured_model source so native retrieve_text can resolve the provider
+    // even before the ANN graph binds a live semantic identity.
+    if req.source_text_column.is_some() {
+        let _ = stamp_embedding_source(db, &table, &emb_col, embeddings, Some(provider_id.as_str()));
+    }
     let text_col = req
         .source_text_column
         .as_deref()
@@ -587,26 +600,53 @@ pub fn plan_semantic_search(
     Ok((k, primary, fallback))
 }
 
-/// Drop rows whose cosine `exact_score` is below `min_score` (exact path only).
-fn apply_min_score(
-    mut result: crate::models::SqlResult,
-    min_score: Option<f32>,
-) -> crate::models::SqlResult {
+/// Drop rows whose cosine similarity is below `min_score`.
+///
+/// Accepts `exact_score` (SQL ann_search_exact, higher better) or native
+/// `score` when `score_kind` is `ann_cosine_distance` (lower better → convert
+/// via `1 - distance`).
+fn apply_min_score(mut result: SqlResult, min_score: Option<f32>) -> SqlResult {
     let Some(threshold) = min_score else {
         return result;
     };
-    let Some(score_idx) = result
+    if threshold <= 0.0 {
+        return result;
+    }
+    let exact_idx = result
         .columns
         .iter()
-        .position(|c| c.eq_ignore_ascii_case("exact_score"))
-    else {
-        return result;
-    };
+        .position(|c| c.eq_ignore_ascii_case("exact_score"));
+    let score_idx = result
+        .columns
+        .iter()
+        .position(|c| c.eq_ignore_ascii_case("score"));
+    let kind_idx = result
+        .columns
+        .iter()
+        .position(|c| c.eq_ignore_ascii_case("score_kind"));
+
     result.rows.retain(|row| {
-        row.get(score_idx)
-            .and_then(|v| v.as_f64().or_else(|| v.as_i64().map(|i| i as f64)))
-            .map(|s| s as f32 >= threshold)
-            .unwrap_or(true)
+        if let Some(idx) = exact_idx {
+            return row
+                .get(idx)
+                .and_then(|v| v.as_f64().or_else(|| v.as_i64().map(|i| i as f64)))
+                .map(|s| s as f32 >= threshold)
+                .unwrap_or(true);
+        }
+        if let (Some(s_idx), Some(k_idx)) = (score_idx, kind_idx) {
+            let kind = row
+                .get(k_idx)
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
+            if kind == "ann_cosine_distance" {
+                let dist = row
+                    .get(s_idx)
+                    .and_then(|v| v.as_f64())
+                    .unwrap_or(1.0) as f32;
+                return (1.0 - dist) >= threshold;
+            }
+        }
+        true
     });
     result.row_count = result.rows.len();
     result
@@ -627,12 +667,28 @@ pub fn resolve_exact_projection(db: Option<&DbSession>, req: &SemanticSearchRequ
 
 /// Direct-session path (used by install/tests and as the preferred branch of
 /// the connection-aware runner).
+///
+/// Prefers MongrelDB 0.64 **native `retrieve_text`** (engine embeds under the
+/// active semantic identity, returns provenance). Falls back to SQL
+/// `ann_search_exact` when the native path is not ready (no provider registry
+/// binding, older roots, etc.).
 pub async fn semantic_search(
     db: &DbSession,
     embeddings: &EmbeddingHub,
     req: SemanticSearchRequest,
-) -> AppResult<crate::models::SqlResult> {
+) -> AppResult<SqlResult> {
     require_ann_surface(db, &req.table, &req.embedding_column)?;
+
+    match try_native_retrieve_text(db, embeddings, &req) {
+        Ok(result) => return Ok(apply_min_score(result, req.min_score)),
+        Err(e) => {
+            tracing::debug!(
+                "native retrieve_text unavailable on {}: {e}; falling back to SQL ann_search_exact",
+                req.table
+            );
+        }
+    }
+
     let proj_cols = resolve_exact_projection(Some(db), &req);
     let (k, sql, fallback) = plan_semantic_search(embeddings, &req, &proj_cols)?;
 
@@ -656,7 +712,216 @@ pub async fn semantic_search(
         .await
         .map_err(|e2| AppError::sql(format!("semantic search failed: {e1}; fallback: {e2}")))?,
     };
-    Ok(apply_min_score(raw, req.min_score))
+    let mut raw = apply_min_score(raw, req.min_score);
+    if raw.search_mode.is_none() {
+        raw.search_mode = Some("sql_ann_exact".into());
+    }
+    Ok(raw)
+}
+
+/// Engine-native text → embed under semantic identity → ANN (0.64+).
+fn try_native_retrieve_text(
+    db: &DbSession,
+    embeddings: &EmbeddingHub,
+    req: &SemanticSearchRequest,
+) -> AppResult<SqlResult> {
+    let started = std::time::Instant::now();
+    let k = req.k.unwrap_or(5).clamp(1, 1000);
+
+    // Ensure the process-local provider is loaded and registered on this root.
+    if req.provider_id.as_deref().unwrap_or(DEFAULT_PROVIDER_ID) == DEFAULT_PROVIDER_ID {
+        embeddings.ensure_local_default()?;
+    }
+    embeddings.register_on_database(&db.database)?;
+    let _ = stamp_embedding_source(
+        db,
+        &req.table,
+        &req.embedding_column,
+        embeddings,
+        req.provider_id.as_deref(),
+    );
+
+    let emb_col_id = embedding_column_id(db, &req.table, &req.embedding_column)?;
+    let retrieved = db
+        .database
+        .retrieve_text(
+            &req.table,
+            emb_col_id,
+            &req.query,
+            TextSearchOptions::new(k),
+        )
+        .map_err(|e| AppError::msg(format!("retrieve_text: {e}")))?;
+
+    let prov = &retrieved.provenance;
+    let fp = prov.semantic_identity.fingerprint_sha256();
+    let provenance = SearchProvenance {
+        provider_id: prov.semantic_identity.provider_id.clone(),
+        provider_version: prov.semantic_identity.provider_version.clone(),
+        model_id: prov.semantic_identity.model_id.clone(),
+        model_version: prov.semantic_identity.model_version.clone(),
+        dimension: prov.semantic_identity.dimension,
+        fingerprint_short: fp
+            .iter()
+            .take(8)
+            .map(|b| format!("{b:02x}"))
+            .collect(),
+        provider_registry_generation: prov.provider_registry_generation,
+        embedding_column: req.embedding_column.clone(),
+    };
+
+    let (columns, rows) = hydrate_retrieve_hits(db, &req.table, &retrieved.hits)?;
+    Ok(SqlResult {
+        columns,
+        rows,
+        row_count: retrieved.hits.len(),
+        truncated: false,
+        elapsed_ms: started.elapsed().as_millis() as u64,
+        statement_kind: "retrieve_text".into(),
+        search_mode: Some("native_retrieve_text".into()),
+        provenance: Some(provenance),
+    })
+}
+
+fn stamp_embedding_source(
+    db: &DbSession,
+    table: &str,
+    emb_col: &str,
+    embeddings: &EmbeddingHub,
+    provider_id: Option<&str>,
+) -> AppResult<()> {
+    let source = embeddings.configured_source(provider_id);
+    // Skip if already set to a configured/local/generated source.
+    {
+        let handle = db.database.table(table).map_err(AppError::db)?;
+        let guard = handle.lock();
+        if let Some(col) = guard.schema().columns.iter().find(|c| c.name == emb_col) {
+            match &col.embedding_source {
+                Some(EmbeddingSource::ConfiguredModel { .. })
+                | Some(EmbeddingSource::LocalModel { .. })
+                | Some(EmbeddingSource::GeneratedColumn { .. })
+                | Some(EmbeddingSource::GeneratedColumnSpec { .. }) => return Ok(()),
+                _ => {}
+            }
+        }
+    }
+    db.database
+        .alter_column(table, emb_col, AlterColumn::set_embedding_source(source))
+        .map_err(AppError::db)?;
+    Ok(())
+}
+
+fn embedding_column_id(db: &DbSession, table: &str, emb_col: &str) -> AppResult<u16> {
+    let handle = db.database.table(table).map_err(AppError::db)?;
+    let guard = handle.lock();
+    guard
+        .schema()
+        .columns
+        .iter()
+        .find(|c| c.name == emb_col)
+        .map(|c| c.id)
+        .ok_or_else(|| AppError::msg(format!("embedding column `{emb_col}` not found on `{table}`")))
+}
+
+fn hydrate_retrieve_hits(
+    db: &DbSession,
+    table: &str,
+    hits: &[mongreldb_core::query::RetrieverHit],
+) -> AppResult<(Vec<String>, Vec<Vec<serde_json::Value>>)> {
+    let handle = db.database.table(table).map_err(AppError::db)?;
+    let guard = handle.lock();
+    let schema = guard.schema().clone();
+    let snapshot = guard.snapshot();
+
+    let col_meta: Vec<(u16, String)> = schema
+        .columns
+        .iter()
+        .filter(|c| !matches!(c.ty, TypeId::Embedding { .. }))
+        .take(10)
+        .map(|c| (c.id, c.name.clone()))
+        .collect();
+    // Score metadata first so ranking is obvious in the Hits table.
+    let mut columns = vec![
+        "rank".into(),
+        "score_kind".into(),
+        "score".into(),
+        "row_id".into(),
+    ];
+    for (_, name) in &col_meta {
+        columns.push(name.clone());
+    }
+
+    let mut rows = Vec::with_capacity(hits.len());
+    for hit in hits {
+        let (score_kind, score_value) = match hit.score {
+            mongreldb_core::query::RetrieverScore::AnnHammingDistance(d) => {
+                ("ann_hamming_distance", f64::from(d))
+            }
+            mongreldb_core::query::RetrieverScore::AnnCosineDistance(d) => {
+                ("ann_cosine_distance", f64::from(d))
+            }
+            mongreldb_core::query::RetrieverScore::SparseDotProduct(v) => {
+                ("sparse_dot_product", v)
+            }
+            mongreldb_core::query::RetrieverScore::MinHashEstimatedJaccard(v) => {
+                ("minhash_estimated_jaccard", f64::from(v))
+            }
+        };
+        let mut row = vec![
+            serde_json::json!(hit.rank),
+            serde_json::json!(score_kind),
+            serde_json::json!(score_value),
+            serde_json::json!(hit.row_id.0),
+        ];
+        if let Some(core_row) = guard.get(hit.row_id, snapshot) {
+            for (id, _) in &col_meta {
+                let cell = core_row
+                    .columns
+                    .get(id)
+                    .map(core_value_json)
+                    .unwrap_or(serde_json::Value::Null);
+                row.push(cell);
+            }
+        } else {
+            for _ in &col_meta {
+                row.push(serde_json::Value::Null);
+            }
+        }
+        rows.push(row);
+    }
+    Ok((columns, rows))
+}
+
+fn core_value_json(v: &Value) -> serde_json::Value {
+    match v {
+        Value::Null => serde_json::Value::Null,
+        Value::Bool(b) => serde_json::json!(b),
+        Value::Int64(n) => serde_json::json!(n),
+        Value::Float64(f) => serde_json::json!(f),
+        Value::Bytes(b) => match std::str::from_utf8(b) {
+            Ok(s) => serde_json::json!(s),
+            Err(_) => serde_json::json!(format!("\\x{}", b.iter().map(|x| format!("{x:02x}")).collect::<String>())),
+        },
+        Value::Embedding(e) => serde_json::json!(format!("[{}d embedding]", e.len())),
+        Value::GeneratedEmbedding(e) => {
+            serde_json::json!(format!("[{}d generated embedding]", e.vector.len()))
+        }
+        Value::Decimal(d) => serde_json::json!(d.to_string()),
+        Value::Interval { months, days, nanos } => {
+            serde_json::json!(format!("interval({months}m {days}d {nanos}ns)"))
+        }
+        Value::Uuid(u) => {
+            let s = format!(
+                "{:02x}{:02x}{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}",
+                u[0], u[1], u[2], u[3], u[4], u[5], u[6], u[7],
+                u[8], u[9], u[10], u[11], u[12], u[13], u[14], u[15]
+            );
+            serde_json::json!(s)
+        }
+        Value::Json(b) => match std::str::from_utf8(b) {
+            Ok(s) => serde_json::from_str(s).unwrap_or_else(|_| serde_json::json!(s)),
+            Err(_) => serde_json::Value::Null,
+        },
+    }
 }
 
 /// Shared path for Tauri commands and MCP: Direct → full `semantic_search`;
@@ -710,7 +975,9 @@ pub async fn semantic_search_on_connection(
             .await
             .map_err(|e2| AppError::sql(format!("semantic search failed: {e1}; fallback: {e2}")))?,
     };
-    Ok(apply_min_score(raw, req.min_score))
+    let mut raw = apply_min_score(raw, req.min_score);
+    raw.search_mode = Some("sql_ann_exact".into());
+    Ok(raw)
 }
 
 fn guess_projection(db: &DbSession, table: &str) -> String {

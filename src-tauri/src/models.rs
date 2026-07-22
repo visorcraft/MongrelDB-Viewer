@@ -122,6 +122,9 @@ pub struct IndexInfo {
     /// Short human summary of kind-specific options (ANN / MinHash / LearnedRange).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub options_summary: Option<String>,
+    /// When the live ANN index has bound a 0.64 semantic identity (model fingerprint).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub semantic_identity: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -173,6 +176,27 @@ pub struct SqlResult {
     pub truncated: bool,
     pub elapsed_ms: u64,
     pub statement_kind: String,
+    /// How the search was executed (`native_retrieve_text` or `sql_ann_exact`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub search_mode: Option<String>,
+    /// Provenance when search used engine-native `retrieve_text` (0.64+).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub provenance: Option<SearchProvenance>,
+}
+
+/// Cryptographic / registry identity of the embedding model used for a query.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SearchProvenance {
+    pub provider_id: String,
+    pub provider_version: String,
+    pub model_id: String,
+    pub model_version: String,
+    pub dimension: u32,
+    /// First 16 hex chars of the semantic-identity fingerprint.
+    pub fingerprint_short: String,
+    pub provider_registry_generation: u64,
+    pub embedding_column: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

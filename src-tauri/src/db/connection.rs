@@ -440,6 +440,8 @@ fn server_run_sql(client: &MongrelClient, sql: &str, max_rows: usize) -> AppResu
         truncated,
         elapsed_ms: started.elapsed().as_millis() as u64,
         statement_kind: kind,
+        search_mode: None,
+        provenance: None,
     })
 }
 

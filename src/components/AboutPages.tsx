@@ -17,8 +17,13 @@ type AboutSub = "about" | "licenses" | "credits";
 const FEATURES = [
   {
     icon: "◎",
-    title: "Dense ANN search",
-    body: "HNSW / DiskANN / IVF × Dense / BinarySign / Product PQ (0.63+), exact cosine rerank, min-score floor.",
+    title: "Native retrieve_text",
+    body: "MongrelDB 0.64+ text→embed under a bound semantic identity→ANN, with cryptographic model provenance on every hit.",
+  },
+  {
+    icon: "⬡",
+    title: "Swappable ANN backends",
+    body: "HNSW / DiskANN / IVF × Dense / BinarySign / Product PQ, exact cosine rerank, min-score floor.",
   },
   {
     icon: "Σ",

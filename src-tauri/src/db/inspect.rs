@@ -139,14 +139,33 @@ pub fn table_detail(db: &DbSession, name: &str) -> AppResult<TableDetail> {
         .indexes
         .iter()
         .map(|idx| {
-            index_info_from_parts(
+            let mut info = index_info_from_parts(
                 idx.name.clone(),
                 idx.column_id,
                 col_name(idx.column_id),
                 index_kind_name(idx.kind).into(),
                 idx.predicate.clone(),
                 &idx.options,
-            )
+            );
+            if matches!(idx.kind, IndexKind::Ann) {
+                // Live ANN may have bound a 0.64 semantic identity (fingerprint).
+                if let Ok(handle) = db.database.table(name) {
+                    let guard = handle.lock();
+                    if let Some(ann) = guard.ann_index(idx.column_id) {
+                        if let Some(id) = ann.semantic_identity() {
+                            let fp = id.fingerprint_sha256();
+                            info.semantic_identity = Some(format!(
+                                "{} / {} @ {} · fp {}",
+                                id.provider_id,
+                                id.model_id,
+                                id.model_version,
+                                hex_short(&fp)
+                            ));
+                        }
+                    }
+                }
+            }
+            info
         })
         .collect();
 
@@ -401,6 +420,7 @@ pub fn index_info_from_parts(
         predicate,
         ann,
         options_summary,
+        semantic_identity: None,
     }
 }
 
@@ -509,6 +529,14 @@ fn options_summary_for(kind: &str, options: &IndexOptions) -> Option<String> {
         }
     }
     None
+}
+
+fn hex_short(bytes: &[u8; 32]) -> String {
+    bytes
+        .iter()
+        .take(8)
+        .map(|b| format!("{b:02x}"))
+        .collect::<String>()
 }
 
 /// Rich description of an embedding column's vector source.

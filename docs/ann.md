@@ -103,14 +103,29 @@ are written into the embedding column after MiniLM runs in-process.
 1. Ensure the table is vector ready.  
 2. Enter a natural-language **query**.  
 3. Set **k** (max hits) and optional **min cosine score** (0 = off).  
-4. Click **Search (ANN + exact rerank)**.  
+4. Click **Search (retrieve_text + ANN)**.  
 
-The engine path prefers exact cosine rerank (`ann_search_exact`) and can fall
-back to `ann_search` when needed. Hits may include score columns such as
-`exact_score` and `search_rank`. On **Dense** indexes the graph uses cosine
-distance; on **BinarySign** HNSW prefilters with Hamming and exact rerank
-restores cosine order; **Product** reports ADC distance (with optional engine
-reconstructed-vector rerank).
+### Native `retrieve_text` (MongrelDB 0.64+)
+
+On **Direct** opens the Viewer prefers the engine-native path:
+
+1. Register the local MiniLM (or remote) provider on the process-local registry  
+2. Resolve the embedding column’s **semantic identity** / `configured_model` source  
+3. Embed the query text under that identity  
+4. Run ANN and return hits **with provenance** (provider, model, fingerprint, registry generation)
+
+Hits include `rank`, `score_kind`, `score`, `row_id`, plus projected row columns.
+The Hits panel shows the semantic-identity banner when native mode succeeds.
+
+### SQL fallback
+
+If native `retrieve_text` is not ready (e.g. server mode, missing provider), the
+Viewer falls back to exact cosine rerank via SQL (`ann_search_exact`) and can
+further fall back to `ann_search`. Hits may include `exact_score` and
+`search_rank`. On **Dense** indexes the graph uses cosine distance; on
+**BinarySign** HNSW prefilters with Hamming and exact rerank restores cosine
+order; **Product** reports ADC distance (with optional engine reconstructed-vector
+rerank).
 
 ### Interpreting results
 
@@ -127,6 +142,8 @@ Table view and constellation show:
   and backend-specific fields  
 - Embedding column **source** when the schema records one (`supplied_by_application`,
   `configured_model · provider / model @ version`, etc.)  
+- **Semantic identity** on live ANN indexes when the engine has bound a model
+  fingerprint (0.64+)
 
 ## Rebuild vs REINDEX
 
