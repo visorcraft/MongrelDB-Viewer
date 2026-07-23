@@ -61,6 +61,12 @@ MongrelDB engine crates (`mongreldb-core`, `mongreldb-query`, `mongreldb-client`
 ANN logic in the viewer. Prefer engine APIs and SQL surfaces. Keep the
 `mongreldb-*` train versions aligned when upgrading.
 
+Cross-version open regression is covered by a frozen demo root under
+`src-tauri/tests/fixtures/` (`sample-demo-v0.64.5.tar.gz`). On engine upgrades,
+**do not** regenerate that archive unless the demo schema intentionally
+changed - the test must keep opening a root written by an older train. See
+`src-tauri/tests/fixtures/README.md` and `scripts/gen-compat-fixture.sh`.
+
 ## Prerequisites
 
 - Rust **1.88+**

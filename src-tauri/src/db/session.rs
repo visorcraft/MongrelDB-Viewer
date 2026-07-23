@@ -814,7 +814,33 @@ fn open_existing(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::process::Command;
     use std::sync::atomic::{AtomicU64, Ordering};
+
+    /// Frozen demo root written by a known mongreldb-* train. Kept as a
+    /// tarball so gitignore rules for `*.wal` / local DBs do not apply, and so
+    /// the bytes stay bit-stable across checkouts.
+    ///
+    /// When upgrading `mongreldb-*`, this archive is intentionally **not**
+    /// regenerated unless the schema is meant to change: the point is that the
+    /// *current* engine must still open a root produced by an older train.
+    const COMPAT_FIXTURE_ARCHIVE: &str = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/tests/fixtures/sample-demo-v0.64.5.tar.gz"
+    );
+    /// Directory name stored at the root of the archive.
+    const COMPAT_FIXTURE_ROOT_NAME: &str = "sample-demo";
+    /// Engine train that produced the committed archive (documentation only).
+    const COMPAT_FIXTURE_WRITTEN_BY: &str = "0.64.5";
+
+    const DEMO_TABLES: &[&str] = &[
+        "authors",
+        "document_tags",
+        "documents",
+        "events",
+        "tags",
+        "tenants",
+    ];
 
     fn unique_demo_dir() -> PathBuf {
         static N: AtomicU64 = AtomicU64::new(0);
@@ -826,6 +852,84 @@ mod tests {
         ));
         let _ = std::fs::remove_dir_all(&dir);
         dir
+    }
+
+    fn expected_demo_table_names() -> Vec<String> {
+        DEMO_TABLES.iter().map(|s| (*s).to_string()).collect()
+    }
+
+    fn table_row_count(db: &Database, name: &str) -> u64 {
+        let handle = db.table(name).expect("table exists");
+        let guard = handle.lock();
+        guard.count()
+    }
+
+    /// Unpack the committed archive into a fresh temp directory; return the
+    /// MongrelDB root path inside it.
+    fn extract_compat_fixture() -> PathBuf {
+        assert!(
+            Path::new(COMPAT_FIXTURE_ARCHIVE).is_file(),
+            "missing compatibility fixture {COMPAT_FIXTURE_ARCHIVE}; \
+             regenerate with: scripts/gen-compat-fixture.sh \
+             (written_by={COMPAT_FIXTURE_WRITTEN_BY})"
+        );
+        let parent = unique_demo_dir();
+        std::fs::create_dir_all(&parent).expect("temp fixture parent");
+        let status = Command::new("tar")
+            .args([
+                "-xzf",
+                COMPAT_FIXTURE_ARCHIVE,
+                "-C",
+                parent.to_str().expect("utf-8 temp path"),
+            ])
+            .status()
+            .expect("failed to spawn `tar` to unpack compatibility fixture");
+        assert!(
+            status.success(),
+            "tar failed to unpack {COMPAT_FIXTURE_ARCHIVE} (exit {status})"
+        );
+        let root = parent.join(COMPAT_FIXTURE_ROOT_NAME);
+        assert!(
+            looks_like_mongreldb(&root),
+            "unpacked fixture is not a MongrelDB root: {}",
+            root.display()
+        );
+        root
+    }
+
+    /// Assert the demo catalog shape and fixed seed counts (no ANN variant).
+    fn assert_demo_catalog(db: &Database) {
+        let mut names = db.table_names();
+        names.sort();
+        assert_eq!(names, expected_demo_table_names());
+
+        assert_eq!(table_row_count(db, "tenants"), 2);
+        assert_eq!(table_row_count(db, "authors"), 4);
+        assert_eq!(table_row_count(db, "documents"), 8);
+        assert_eq!(table_row_count(db, "events"), 16);
+        assert_eq!(table_row_count(db, "tags"), 5);
+        assert_eq!(table_row_count(db, "document_tags"), 12);
+
+        // Schema markers that catch column/index regressions on documents.
+        let docs = db.table("documents").expect("documents");
+        let schema = docs.lock().schema().clone();
+        let col_names: Vec<&str> = schema.columns.iter().map(|c| c.name.as_str()).collect();
+        assert_eq!(
+            col_names,
+            vec!["id", "tenant_id", "author_id", "body", "status", "score"],
+            "documents columns drifted from the frozen demo schema"
+        );
+        let index_names: Vec<&str> = schema.indexes.iter().map(|i| i.name.as_str()).collect();
+        assert!(
+            index_names.contains(&"docs_body_fm") && index_names.contains(&"docs_score_pgm"),
+            "expected FM + PGM indexes on documents, got {index_names:?}"
+        );
+        // Frozen fixture is the no-ANN demo; an unexpected embedding column
+        // would mean the wrong archive (or a silent migration) was committed.
+        assert!(
+            !col_names.contains(&"embedding"),
+            "compat fixture must stay on the no-ANN demo shape"
+        );
     }
 
     #[test]
@@ -843,22 +947,160 @@ mod tests {
         let kit = mongreldb_kit::Database::open(&path).expect("kit open demo root");
         let mut names = kit.table_names();
         names.sort();
-        assert_eq!(
-            names,
-            vec![
-                "authors".to_string(),
-                "document_tags".to_string(),
-                "documents".to_string(),
-                "events".to_string(),
-                "tags".to_string(),
-                "tenants".to_string(),
-            ]
-        );
+        assert_eq!(names, expected_demo_table_names());
         let rows = kit
             .sql_rows("SELECT count(*) AS c FROM documents")
             .expect("count documents");
         assert_eq!(rows[0].get("c").and_then(|v| v.as_i64()), Some(8));
 
         let _ = std::fs::remove_dir_all(&path);
+    }
+
+    /// Cross-version regression: a sample DB written by train
+    /// [`COMPAT_FIXTURE_WRITTEN_BY`] must remain openable (core + Kit + SQL)
+    /// under the *currently linked* mongreldb-* crates.
+    ///
+    /// This is the test that would have failed on the 0.64.0 WAL Put layout
+    /// break when opening a 0.63.x root.
+    #[test]
+    fn frozen_sample_demo_remains_usable_on_current_engine() {
+        let path = extract_compat_fixture();
+
+        assert!(
+            path.join(KIT_SCHEMA_FILE).is_file(),
+            "frozen fixture must include {KIT_SCHEMA_FILE}"
+        );
+
+        // Viewer direct-open path (WAL recovery, catalog load, session bind).
+        let session = DbSession::open(&path, None, None, None, OpenMode::Open).unwrap_or_else(|e| {
+            panic!(
+                "frozen sample demo (written by mongreldb {COMPAT_FIXTURE_WRITTEN_BY}) \
+                 failed to open on current engine: {e}\n\
+                 path={}",
+                path.display()
+            )
+        });
+
+        assert_demo_catalog(&session.database);
+
+        // Query layer: DataFusion SQL against the recovered catalog.
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("tokio test runtime");
+        let batches = rt.block_on(async {
+            session
+                .session
+                .run(
+                    "SELECT t.name AS tenant, count(*) AS n \
+                     FROM documents d JOIN tenants t ON d.tenant_id = t.id \
+                     GROUP BY t.name ORDER BY t.name",
+                )
+                .await
+        });
+        let batches = batches.unwrap_or_else(|e| {
+            panic!("SQL against frozen fixture failed (schema/query regression?): {e}")
+        });
+        assert!(
+            !batches.is_empty() && batches.iter().map(|b| b.num_rows()).sum::<usize>() == 2,
+            "expected 2 tenant groups from frozen demo join"
+        );
+
+        // Point read via SQL (exercises index/catalog path used by the table UI).
+        let point = rt
+            .block_on(async {
+                session
+                    .session
+                    .run("SELECT id, status FROM documents WHERE id = 1")
+                    .await
+            })
+            .expect("point SELECT on frozen fixture");
+        assert_eq!(point.iter().map(|b| b.num_rows()).sum::<usize>(), 1);
+
+        drop(session);
+
+        // Kit clients (Mongrel desktop, etc.) must still open the same root.
+        let kit = mongreldb_kit::Database::open(&path).unwrap_or_else(|e| {
+            panic!("Kit open of frozen fixture failed: {e}");
+        });
+        let mut kit_names = kit.table_names();
+        kit_names.sort();
+        assert_eq!(kit_names, expected_demo_table_names());
+        let rows = kit
+            .sql_rows("SELECT count(*) AS c FROM documents")
+            .expect("kit count documents");
+        assert_eq!(rows[0].get("c").and_then(|v| v.as_i64()), Some(8));
+
+        let _ = std::fs::remove_dir_all(path.parent().unwrap_or(path.as_path()));
+    }
+
+    /// Rewrite the committed compatibility archive from the current engine.
+    ///
+    /// Only run this when you intentionally want a new golden root (e.g. after
+    /// a deliberate demo-schema change). Normal upgrades must keep the old
+    /// archive so open-compat stays enforced.
+    ///
+    /// ```sh
+    /// scripts/gen-compat-fixture.sh
+    /// # or:
+    /// REGEN_COMPAT_FIXTURE=1 cargo test -p mongreldb-viewer regenerate_frozen_compat_fixture -- --ignored --nocapture
+    /// ```
+    #[test]
+    #[ignore = "regenerates tests/fixtures/sample-demo-v0.64.5.tar.gz; run via scripts/gen-compat-fixture.sh"]
+    fn regenerate_frozen_compat_fixture() {
+        assert_eq!(
+            std::env::var("REGEN_COMPAT_FIXTURE").as_deref(),
+            Ok("1"),
+            "refusing to rewrite the frozen fixture without REGEN_COMPAT_FIXTURE=1 \
+             (upgrades must keep the old archive so open-compat stays enforced)"
+        );
+
+        let staging_parent = unique_demo_dir();
+        let staging = staging_parent.join(COMPAT_FIXTURE_ROOT_NAME);
+        let session = DbSession::create_demo(&staging, false).expect("create demo for fixture");
+        // Ensure catalog is durable before packing.
+        drop(session);
+
+        let archive = Path::new(COMPAT_FIXTURE_ARCHIVE);
+        if let Some(parent) = archive.parent() {
+            std::fs::create_dir_all(parent).expect("fixtures dir");
+        }
+        if archive.exists() {
+            std::fs::remove_file(archive).expect("remove old archive");
+        }
+
+        // Write metadata alongside the root so the tarball is self-describing.
+        let engine = mongreldb_core::build_info();
+        let meta = format!(
+            "{{\n  \"written_by_engine\": \"{}\",\n  \"engine_version\": \"{}\",\n  \
+             \"git_sha\": \"{}\",\n  \"with_ann\": false,\n  \
+             \"schema\": \"viewer create_demo (no ANN)\",\n  \
+             \"purpose\": \"cross-version open regression for mongreldb-viewer\"\n}}\n",
+            COMPAT_FIXTURE_WRITTEN_BY,
+            engine.engine_version,
+            engine.mongreldb_git_sha,
+        );
+        std::fs::write(staging.join("FIXTURE_META.json"), meta).expect("write FIXTURE_META.json");
+
+        let status = Command::new("tar")
+            .current_dir(&staging_parent)
+            .args([
+                "-czf",
+                archive.to_str().expect("utf-8 archive path"),
+                COMPAT_FIXTURE_ROOT_NAME,
+            ])
+            .status()
+            .expect("spawn tar to pack fixture");
+        assert!(status.success(), "tar pack failed: {status}");
+        assert!(archive.is_file(), "archive not written: {}", archive.display());
+
+        eprintln!(
+            "wrote {} ({} bytes) from engine {}",
+            archive.display(),
+            std::fs::metadata(archive).map(|m| m.len()).unwrap_or(0),
+            engine.engine_version,
+        );
+
+        let _ = std::fs::remove_dir_all(&staging_parent);
     }
 }
