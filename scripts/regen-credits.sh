@@ -293,7 +293,12 @@ ack = ack_path.read_text(encoding="utf-8")
 # MongrelDB engine crate versions in the acknowledgments table
 crate_ver = {r["name"]: r["version"] for r in rows}
 crate_lic = {r["name"]: r["license"] for r in rows}
-for name in ("mongreldb-core", "mongreldb-query", "mongreldb-client"):
+for name in (
+    "mongreldb-core",
+    "mongreldb-query",
+    "mongreldb-client",
+    "mongreldb-kit",
+):
     if name in crate_ver:
         ack = re.sub(
             rf"(\| `{re.escape(name)}`)(?:\s+[\d.]+)?(\s+\|)",
