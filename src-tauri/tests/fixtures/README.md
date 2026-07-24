@@ -13,7 +13,7 @@ Frozen MongrelDB roots used to catch **cross-version open regressions**
 | Also includes | `kit_schema.json`, `FIXTURE_META.json` |
 
 The archive is intentionally **version-pinned in the filename**. When you bump
-the engine crates (for example 0.64.5 → 0.64.6), **keep this file** so the test
+the engine crates (for example 0.64.5 → 0.64.8), **keep this file** so the test
 `frozen_sample_demo_remains_usable_on_current_engine` still opens a root
 produced by an older train.
 
