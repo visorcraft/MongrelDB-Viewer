@@ -173,6 +173,11 @@ impl EmbeddingHub {
                 }
             }
         }
+        if want != DEFAULT_PROVIDER_ID && want != DEFAULT_MODEL_ID {
+            return Err(AppError::Embedding(format!(
+                "embedding provider `{want}` is not configured"
+            )));
+        }
 
         // Local default path
         self.ensure_local_default()?;
@@ -205,16 +210,27 @@ impl EmbeddingHub {
     /// Register the active Viewer embedding backend on a Direct `Database` so
     /// engine-native surfaces (`retrieve_text`, semantic identity binding) can
     /// resolve the same MiniLM/remote provider the Viewer uses for install.
-    pub fn register_on_database(&self, db: &mongreldb_core::Database) -> AppResult<()> {
+    pub fn register_on_database(
+        &self,
+        db: &mongreldb_core::Database,
+        provider_id: Option<&str>,
+    ) -> AppResult<()> {
+        let want = provider_id.unwrap_or(DEFAULT_PROVIDER_ID);
         let providers = self.list_providers();
         let ready = providers
             .into_iter()
-            .find(|p| p.health == "ready")
+            .find(|provider| {
+                provider.health == "ready"
+                    && (provider.provider_id == want
+                        || ((want == "remote" || want == "remote-openai-compatible")
+                            && provider.backend == "openai-compatible")
+                        || (want == DEFAULT_MODEL_ID
+                            && provider.provider_id == DEFAULT_PROVIDER_ID))
+            })
             .ok_or_else(|| {
-                AppError::Embedding(
-                    "no ready embedding provider — load MiniLM or configure a remote endpoint"
-                        .into(),
-                )
+                AppError::Embedding(format!(
+                    "embedding provider `{want}` is not ready; load MiniLM or configure it"
+                ))
             })?;
 
         let provider: Arc<dyn mongreldb_core::EmbeddingProvider> =

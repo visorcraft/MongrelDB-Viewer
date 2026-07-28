@@ -1,5 +1,5 @@
 use mongreldb_core::schema::{AlterColumn, ColumnFlags, IndexKind, TypeId};
-use mongreldb_core::{EmbeddingSource, TextSearchOptions, Value};
+use mongreldb_core::{EmbeddingSource, RowId, TextSearchOptions, Value};
 
 use crate::db::session::DbSession;
 use crate::db::sql::run_sql;
@@ -70,47 +70,48 @@ pub async fn install_dense_ann(
         .provider_id
         .clone()
         .unwrap_or_else(|| DEFAULT_PROVIDER_ID.to_string());
-
-    if req.source_text_column.is_some() && provider_id == DEFAULT_PROVIDER_ID {
-        embeddings.ensure_local_default()?;
-    }
-    // Register on the engine so 0.64 retrieve_text / semantic identity can resolve.
-    if req.source_text_column.is_some() {
-        let _ = embeddings.register_on_database(&db.database);
-    }
-
-    // Mutate schema synchronously; no awaits while table guards are live.
-    // ANN presence is durable in the table schema - survives close/reopen.
-    let mut has_ann = ensure_embedding_column_and_check_ann(db, &table, &emb_col, dim)?;
-    // Stamp configured_model source so native retrieve_text can resolve the provider
-    // even before the ANN graph binds a live semantic identity.
-    if req.source_text_column.is_some() {
-        let _ =
-            stamp_embedding_source(db, &table, &emb_col, embeddings, Some(provider_id.as_str()));
-    }
     let text_col = req
         .source_text_column
         .as_deref()
         .map(str::trim)
         .filter(|s| !s.is_empty())
         .map(str::to_string);
+    if text_col.as_deref() == Some(emb_col.as_str()) {
+        return Err(AppError::msg(
+            "source text column and embedding column must be different",
+        ));
+    }
+    let prepared = text_col
+        .as_deref()
+        .map(|text_col| {
+            let limit = req.backfill_limit.unwrap_or(usize::MAX);
+            if limit == 0 {
+                return Err(AppError::msg("backfillLimit must be greater than zero"));
+            }
+            prepare_backfill(
+                db,
+                embeddings,
+                &table,
+                text_col,
+                dim,
+                Some(provider_id.as_str()),
+                limit,
+            )
+        })
+        .transpose()?;
+    if prepared.as_ref().is_some_and(|rows| !rows.is_empty()) {
+        embeddings.register_on_database(&db.database, Some(provider_id.as_str()))?;
+    }
 
-    let mut rebuilt = false;
-    if rebuild && has_ann {
-        let existing_name =
-            existing_ann_index_name(db, &table, &emb_col).unwrap_or_else(|| index_name.clone());
-        index_name = existing_name.clone();
-        let drop_sql = format!("DROP INDEX {existing_name} ON {table}");
-        db.session
-            .run(&drop_sql)
-            .await
-            .map_err(|e| AppError::sql(format!("DROP INDEX failed: {e}")))?;
-        has_ann = false;
-        rebuilt = true;
+    // Mutate schema synchronously; no awaits while table guards are live.
+    // ANN presence is durable in the table schema - survives close/reopen.
+    let mut has_ann = ensure_embedding_column_and_check_ann(db, &table, &emb_col, dim)?;
+    if has_ann {
+        index_name = existing_ann_index_name(db, &table, &emb_col).unwrap_or(index_name);
     }
 
     // Already fully installed and no re-embed / rebuild requested - do nothing.
-    if has_ann && text_col.is_none() {
+    if has_ann && text_col.is_none() && !rebuild {
         let existing = existing_ann_quantization(db, &table, &emb_col).unwrap_or(quantization);
         let existing_algo = existing_ann_algorithm(db, &table, &emb_col).unwrap_or(algorithm);
         return Ok(InstallAnnResult {
@@ -130,29 +131,39 @@ pub async fn install_dense_ann(
             ),
         });
     }
+    let create_sql = (!has_ann || rebuild)
+        .then(|| build_create_ann_sql(&index_name, &table, &emb_col, algorithm, quantization, &req))
+        .transpose()?;
 
-    if !has_ann {
-        let sql =
-            build_create_ann_sql(&index_name, &table, &emb_col, algorithm, quantization, &req)?;
+    let rows_embedded = if let Some(prepared) = prepared {
+        let updated = backfill_embeddings(db, &table, &emb_col, prepared)?;
+        if updated > 0 {
+            stamp_embedding_source(db, &table, &emb_col, embeddings, Some(provider_id.as_str()))?;
+        }
+        updated
+    } else {
+        0
+    };
+
+    let mut rebuilt = false;
+    if rebuild && has_ann {
+        let drop_sql = format!("DROP INDEX {index_name} ON {table}");
         db.session
-            .run(&sql)
+            .run(&drop_sql)
             .await
-            .map_err(|e| AppError::sql(format!("CREATE INDEX failed: {e}")))?;
+            .map_err(|e| AppError::sql(format!("DROP INDEX failed: {e}")))?;
+        has_ann = false;
+        rebuilt = true;
     }
 
-    let mut rows_embedded = 0u64;
-    if let Some(text_col) = text_col {
-        rows_embedded = backfill_embeddings(
-            db,
-            embeddings,
-            &table,
-            &text_col,
-            &emb_col,
-            dim,
-            Some(provider_id.as_str()),
-            req.backfill_limit.unwrap_or(10_000),
-        )
-        .await?;
+    if !has_ann {
+        let create_sql = create_sql
+            .as_deref()
+            .ok_or_else(|| AppError::msg("ANN create plan missing"))?;
+        db.session
+            .run(create_sql)
+            .await
+            .map_err(|e| AppError::sql(format!("CREATE INDEX failed: {e}")))?;
     }
 
     let active_quant = if has_ann && !rebuilt {
@@ -368,8 +379,7 @@ fn ensure_embedding_column_and_check_ann(
     dim: u32,
 ) -> AppResult<bool> {
     let handle = db.database.table(table).map_err(AppError::db)?;
-    let mut guard = handle.lock();
-    let schema = guard.schema().clone();
+    let schema = handle.lock().schema().clone();
     let existing = schema.columns.iter().find(|c| c.name == emb_col);
     match existing {
         Some(col) => match &col.ty {
@@ -386,8 +396,9 @@ fn ensure_embedding_column_and_check_ann(
             }
         },
         None => {
-            guard
+            db.database
                 .add_column(
+                    table,
                     emb_col,
                     TypeId::Embedding { dim },
                     ColumnFlags::empty().with(ColumnFlags::NULLABLE),
@@ -397,7 +408,8 @@ fn ensure_embedding_column_and_check_ann(
         }
     }
 
-    let schema = guard.schema().clone();
+    let handle = db.database.table(table).map_err(AppError::db)?;
+    let schema = handle.lock().schema().clone();
     let emb_id = schema
         .columns
         .iter()
@@ -410,16 +422,16 @@ fn ensure_embedding_column_and_check_ann(
     Ok(has_ann)
 }
 
-fn primary_key_name(db: &DbSession, table: &str) -> AppResult<String> {
+fn table_column_id(db: &DbSession, table: &str, column: &str) -> AppResult<u16> {
     let handle = db.database.table(table).map_err(AppError::db)?;
     let guard = handle.lock();
-    Ok(guard
+    guard
         .schema()
         .columns
         .iter()
-        .find(|c| c.flags.contains(ColumnFlags::PRIMARY_KEY))
-        .map(|c| c.name.clone())
-        .unwrap_or_else(|| "id".into()))
+        .find(|c| c.name == column)
+        .map(|c| c.id)
+        .ok_or_else(|| AppError::msg(format!("column `{column}` not found on `{table}`")))
 }
 
 fn table_column_names(db: &DbSession, table: &str) -> AppResult<Vec<String>> {
@@ -473,88 +485,93 @@ fn require_ann_surface(db: &DbSession, table: &str, emb_col: &str) -> AppResult<
 }
 
 #[allow(clippy::too_many_arguments)]
-async fn backfill_embeddings(
+fn prepare_backfill(
     db: &DbSession,
     embeddings: &EmbeddingHub,
     table: &str,
     text_col: &str,
-    emb_col: &str,
     dim: u32,
     provider_id: Option<&str>,
     limit: usize,
-) -> AppResult<u64> {
+) -> AppResult<Vec<(RowId, Vec<f32>)>> {
     require_column(db, table, text_col)?;
-    require_column(db, table, emb_col)?;
-    let pk_name = primary_key_name(db, table)?;
-    let select = format!("SELECT {pk_name}, {text_col} FROM {table} LIMIT {limit}");
-    let result = run_sql(
-        db,
-        SqlRequest {
-            sql: select,
-            max_rows: Some(limit),
-        },
-    )
-    .await
-    .map_err(|e| {
-        AppError::sql(format!(
-            "backfill select failed on `{table}.{text_col}`: {e}. \
-             Choose a text column that exists on this table."
-        ))
-    })?;
-
-    let mut updated = 0u64;
-    for chunk in result.rows.chunks(32) {
-        let mut texts = Vec::new();
-        let mut keys = Vec::new();
-        for row in chunk {
-            if row.len() < 2 {
-                continue;
-            }
-            let key = row[0].clone();
-            let text = match &row[1] {
-                serde_json::Value::String(s) => s.clone(),
-                serde_json::Value::Null => continue,
+    let text_col_id = table_column_id(db, table, text_col)?;
+    let principal = db.database.principal();
+    let rows = db
+        .database
+        .rows_for(table, principal.as_ref())
+        .map_err(AppError::db)?;
+    let pending: Vec<(RowId, String)> = rows
+        .into_iter()
+        .filter_map(|row| {
+            let value = row.columns.get(&text_col_id)?;
+            let text = match core_value_json(value) {
+                serde_json::Value::Null => return None,
+                serde_json::Value::String(text) => text,
                 other => other.to_string(),
             };
-            if text.is_empty() {
-                continue;
-            }
-            keys.push(key);
-            texts.push(text);
-        }
-        if texts.is_empty() {
-            continue;
-        }
+            (!text.is_empty()).then_some((row.row_id, text))
+        })
+        .collect();
+    if pending.len() > limit {
+        return Err(AppError::msg(format!(
+            "backfillLimit {limit} is smaller than {} eligible rows; raise or omit the limit",
+            pending.len()
+        )));
+    }
+
+    let mut prepared = Vec::with_capacity(pending.len());
+    for chunk in pending.chunks(32) {
+        let texts: Vec<String> = chunk.iter().map(|(_, text)| text.clone()).collect();
         let emb = embeddings.embed(&texts, provider_id)?;
-        if emb.dimension != dim {
+        if emb.dimension != dim
+            || emb
+                .vectors
+                .iter()
+                .any(|vector| vector.len() != dim as usize)
+        {
             return Err(AppError::Embedding(format!(
                 "provider returned dim {}, expected {dim}",
                 emb.dimension
             )));
         }
-
-        for (key, vector) in keys.iter().zip(emb.vectors.iter()) {
-            let vec_lit = format!(
-                "[{}]",
-                vector
-                    .iter()
-                    .map(|f| format!("{f}"))
-                    .collect::<Vec<_>>()
-                    .join(",")
-            );
-            let key_sql = match key {
-                serde_json::Value::String(s) => format!("'{}'", s.replace('\'', "''")),
-                other => other.to_string(),
-            };
-            let update =
-                format!("UPDATE {table} SET {emb_col} = '{vec_lit}' WHERE {pk_name} = {key_sql}");
-            match db.session.run(&update).await {
-                Ok(_) => updated += 1,
-                Err(e) => tracing::warn!("backfill update failed for {key_sql}: {e}"),
-            }
+        if emb.vectors.len() != chunk.len() {
+            return Err(AppError::Embedding(format!(
+                "provider returned {} vectors for {} texts",
+                emb.vectors.len(),
+                chunk.len()
+            )));
+        }
+        if emb.vectors.iter().flatten().any(|value| !value.is_finite()) {
+            return Err(AppError::Embedding(
+                "provider returned a non-finite embedding value".into(),
+            ));
+        }
+        for ((row_id, _), vector) in chunk.iter().zip(emb.vectors) {
+            prepared.push((*row_id, vector));
         }
     }
+    Ok(prepared)
+}
 
+fn backfill_embeddings(
+    db: &DbSession,
+    table: &str,
+    emb_col: &str,
+    prepared: Vec<(RowId, Vec<f32>)>,
+) -> AppResult<u64> {
+    let emb_col_id = table_column_id(db, table, emb_col)?;
+    let updated = prepared.len() as u64;
+    let updates = prepared
+        .into_iter()
+        .map(|(row_id, vector)| (row_id, vec![(emb_col_id, Value::Embedding(vector))]))
+        .collect();
+    db.database
+        .transaction_for_current_principal(move |transaction| {
+            transaction.update_many(table, updates)?;
+            Ok(())
+        })
+        .map_err(AppError::db)?;
     Ok(updated)
 }
 
@@ -676,9 +693,10 @@ pub fn resolve_exact_projection(db: Option<&DbSession>, req: &SemanticSearchRequ
 pub async fn semantic_search(
     db: &DbSession,
     embeddings: &EmbeddingHub,
-    req: SemanticSearchRequest,
+    mut req: SemanticSearchRequest,
 ) -> AppResult<SqlResult> {
     require_ann_surface(db, &req.table, &req.embedding_column)?;
+    bind_search_provider(db, &mut req)?;
 
     match try_native_retrieve_text(db, embeddings, &req) {
         Ok(result) => return Ok(apply_min_score(result, req.min_score)),
@@ -733,14 +751,7 @@ fn try_native_retrieve_text(
     if req.provider_id.as_deref().unwrap_or(DEFAULT_PROVIDER_ID) == DEFAULT_PROVIDER_ID {
         embeddings.ensure_local_default()?;
     }
-    embeddings.register_on_database(&db.database)?;
-    let _ = stamp_embedding_source(
-        db,
-        &req.table,
-        &req.embedding_column,
-        embeddings,
-        req.provider_id.as_deref(),
-    );
+    embeddings.register_on_database(&db.database, req.provider_id.as_deref())?;
 
     let emb_col_id = embedding_column_id(db, &req.table, &req.embedding_column)?;
     let retrieved = db
@@ -787,24 +798,63 @@ fn stamp_embedding_source(
     provider_id: Option<&str>,
 ) -> AppResult<()> {
     let source = embeddings.configured_source(provider_id);
-    // Skip if already set to a configured/local/generated source.
-    {
+    let unchanged = {
         let handle = db.database.table(table).map_err(AppError::db)?;
         let guard = handle.lock();
-        if let Some(col) = guard.schema().columns.iter().find(|c| c.name == emb_col) {
-            match &col.embedding_source {
-                Some(EmbeddingSource::ConfiguredModel { .. })
-                | Some(EmbeddingSource::LocalModel { .. })
-                | Some(EmbeddingSource::GeneratedColumn { .. })
-                | Some(EmbeddingSource::GeneratedColumnSpec { .. }) => return Ok(()),
-                _ => {}
-            }
-        }
+        guard
+            .schema()
+            .columns
+            .iter()
+            .find(|c| c.name == emb_col)
+            .and_then(|col| col.embedding_source.as_ref())
+            == Some(&source)
+    };
+    if unchanged {
+        return Ok(());
     }
     db.database
         .alter_column(table, emb_col, AlterColumn::set_embedding_source(source))
         .map_err(AppError::db)?;
     Ok(())
+}
+
+fn bind_search_provider(db: &DbSession, req: &mut SemanticSearchRequest) -> AppResult<()> {
+    let handle = db.database.table(&req.table).map_err(AppError::db)?;
+    let guard = handle.lock();
+    let source = guard
+        .schema()
+        .columns
+        .iter()
+        .find(|column| column.name == req.embedding_column)
+        .and_then(|column| column.embedding_source.clone());
+    drop(guard);
+
+    let recorded = match source.as_ref() {
+        Some(EmbeddingSource::LocalModel { model_id, .. })
+            if model_id == crate::embeddings::DEFAULT_MODEL_ID =>
+        {
+            Some(DEFAULT_PROVIDER_ID)
+        }
+        Some(source) => source.provider_id(),
+        None => None,
+    };
+    match (req.provider_id.as_deref(), recorded) {
+        (Some(requested), Some(recorded)) if requested != recorded => {
+            Err(AppError::Embedding(format!(
+                "embedding provider `{requested}` does not match `{recorded}` recorded on {}.{}",
+                req.table, req.embedding_column
+            )))
+        }
+        (None, Some(recorded)) => {
+            req.provider_id = Some(recorded.to_string());
+            Ok(())
+        }
+        (None, None) => Err(AppError::Embedding(format!(
+            "{}.{} has no recorded embedding provider; pass providerId/provider_id explicitly or re-embed it",
+            req.table, req.embedding_column
+        ))),
+        _ => Ok(()),
+    }
 }
 
 fn embedding_column_id(db: &DbSession, table: &str, emb_col: &str) -> AppResult<u16> {
@@ -869,7 +919,7 @@ fn hydrate_retrieve_hits(
             serde_json::json!(hit.rank),
             serde_json::json!(score_kind),
             serde_json::json!(score_value),
-            serde_json::json!(hit.row_id.0),
+            crate::db::sql::json_u64(hit.row_id.0),
         ];
         if let Some(core_row) = guard.get(hit.row_id, snapshot) {
             for (id, _) in &col_meta {
@@ -894,7 +944,7 @@ fn core_value_json(v: &Value) -> serde_json::Value {
     match v {
         Value::Null => serde_json::Value::Null,
         Value::Bool(b) => serde_json::json!(b),
-        Value::Int64(n) => serde_json::json!(n),
+        Value::Int64(n) => crate::db::sql::json_i64(*n),
         Value::Float64(f) => serde_json::json!(f),
         Value::Bytes(b) => match std::str::from_utf8(b) {
             Ok(s) => serde_json::json!(s),
@@ -1003,5 +1053,149 @@ fn guess_projection(db: &DbSession, table: &str) -> String {
         "id".into()
     } else {
         names.join(",")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn temp_root(label: &str) -> std::path::PathBuf {
+        std::env::temp_dir().join(format!(
+            "mongreldb-viewer-{label}-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .expect("clock")
+                .as_nanos()
+        ))
+    }
+
+    #[tokio::test]
+    async fn installs_new_embedding_column_and_ann() {
+        let root = temp_root("ann-install");
+        let db = DbSession::create_demo(&root, false).expect("demo");
+        let request = serde_json::from_value(serde_json::json!({
+            "table": "documents",
+            "embeddingColumn": "embedding",
+            "dimension": 384
+        }))
+        .expect("request");
+
+        let result = install_dense_ann(&db, &EmbeddingHub::default(), request)
+            .await
+            .expect("install");
+        assert_eq!(result.embedding_column, "embedding");
+        let handle = db.database.table("documents").expect("documents");
+        let schema = handle.lock().schema().clone();
+        let embedding = schema
+            .columns
+            .iter()
+            .find(|column| column.name == "embedding")
+            .expect("embedding column");
+        assert!(
+            schema
+                .indexes
+                .iter()
+                .any(|index| index.kind == IndexKind::Ann && index.column_id == embedding.id),
+            "ANN index"
+        );
+        drop(handle);
+        drop(db);
+        let _ = std::fs::remove_dir_all(root);
+    }
+
+    #[tokio::test]
+    async fn backfill_limit_fails_before_schema_change() {
+        let root = temp_root("ann-limit");
+        let db = DbSession::create_demo(&root, false).expect("demo");
+        let request = InstallAnnRequest {
+            table: "documents".into(),
+            embedding_column: Some("embedding".into()),
+            dimension: Some(384),
+            source_text_column: Some("body".into()),
+            provider_id: None,
+            index_name: None,
+            m: None,
+            ef_construction: None,
+            ef_search: None,
+            backfill_limit: Some(1),
+            quantization: None,
+            algorithm: None,
+            product_num_subvectors: None,
+            product_bits: None,
+            diskann_r: None,
+            diskann_l: None,
+            diskann_beam_width: None,
+            ivf_nlist: None,
+            ivf_nprobe: None,
+            rebuild: None,
+        };
+
+        let error = install_dense_ann(&db, &EmbeddingHub::default(), request)
+            .await
+            .expect_err("limit must fail");
+        assert!(error.to_string().contains("backfillLimit 1"));
+        let handle = db.database.table("documents").expect("documents");
+        assert!(
+            handle
+                .lock()
+                .schema()
+                .columns
+                .iter()
+                .all(|column| column.name != "embedding"),
+            "failed preflight must not alter schema"
+        );
+        drop(handle);
+        drop(db);
+        let _ = std::fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn supplied_vectors_need_explicit_provider_without_relabeling() {
+        let root = temp_root("ann-source");
+        let db = DbSession::create_demo(&root, false).expect("demo");
+        db.database
+            .add_column(
+                "documents",
+                "embedding",
+                TypeId::Embedding { dim: 384 },
+                ColumnFlags::empty().with(ColumnFlags::NULLABLE),
+                None,
+            )
+            .expect("embedding column");
+        db.database
+            .alter_column(
+                "documents",
+                "embedding",
+                AlterColumn::set_embedding_source(EmbeddingSource::SuppliedByApplication),
+            )
+            .expect("source");
+        let mut request = SemanticSearchRequest {
+            table: "documents".into(),
+            embedding_column: "embedding".into(),
+            query: "test".into(),
+            k: None,
+            provider_id: None,
+            projection: None,
+            exact_rerank: None,
+            min_score: None,
+        };
+
+        assert!(bind_search_provider(&db, &mut request).is_err());
+        request.provider_id = Some(DEFAULT_PROVIDER_ID.into());
+        bind_search_provider(&db, &mut request).expect("explicit provider");
+        let handle = db.database.table("documents").expect("documents");
+        let source = handle
+            .lock()
+            .schema()
+            .columns
+            .iter()
+            .find(|column| column.name == "embedding")
+            .and_then(|column| column.embedding_source.clone());
+        assert_eq!(source, Some(EmbeddingSource::SuppliedByApplication));
+        drop(handle);
+        drop(db);
+        let _ = std::fs::remove_dir_all(root);
     }
 }

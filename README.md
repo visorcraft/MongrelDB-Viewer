@@ -5,9 +5,10 @@
 <h1 align="center">MongrelDB Viewer</h1>
 
 <p align="center">
-  <b>Signal Deck for <a href="https://github.com/visorcraft/MongrelDB">MongrelDB</a> - open a local root or server and make the engine’s AI-native strengths visible and interactive.</b>
+  <strong>A desktop Signal Deck for <a href="https://github.com/visorcraft/MongrelDB">MongrelDB</a>.</strong>
   <br />
-  Direct embedded open · multi-client HTTP · schema constellation · six index kinds · dense ANN + exact rerank · SQL workbench · OpenAI-compatible agent · MCP bridge
+  Inspect schemas and indexes, browse rows, run SQL, build dense ANN search,
+  chat through an OpenAI-compatible model, and expose the open database over MCP.
 </p>
 
 <p align="center">
@@ -15,192 +16,204 @@
   <img src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg" alt="License: MIT OR Apache-2.0" />
   <img src="https://img.shields.io/badge/built%20with-Rust-000000?logo=rust&amp;logoColor=white" alt="Built with Rust" />
   <img src="https://img.shields.io/badge/stack-Tauri%202%20%2B%20React-3dffe8" alt="Stack: Tauri 2 + React" />
-  <img src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-333333?logo=linux&amp;logoColor=white" alt="Platform: Linux, macOS, Windows" />
+  <img src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-333333" alt="Platform: Linux, macOS, Windows" />
 </p>
 
----
+## What it does
+
+MongrelDB Viewer has two connection modes:
+
+| Capability | Direct folder | `mongreldb-server` |
+| --- | :---: | :---: |
+| Open style | Embedded, exclusive filesystem lock | Multi-client HTTP |
+| Browse schema and rows | Yes | Yes |
+| Run SQL, DDL, and DML | Yes | Yes, when the server permits it |
+| Show foreign-key graph | Yes | Not exposed by the current server adapter |
+| Native `retrieve_text` provenance | Yes | No, SQL ANN fallback |
+| Install, backfill, or rebuild ANN from the UI | Yes | No |
+| Run REINDEX | Yes | Sent as server SQL |
+| Agent and in-app MCP | Yes | Yes |
+| Catalog credentials and encryption passphrase | Yes | Server auth only |
+
+Direct mode uses `mongreldb-core` and `mongreldb-query` in the application
+process. Server mode uses `mongreldb-client` against a running daemon. See
+[connection modes](docs/connections.md) before opening production data.
 
 ## Gallery
 
-Captured at ~1080p against a local demo dataset in Direct Mode
-(`/tmp/mongreldb-viewer-gallery-demo`: tenants, authors, documents with dense ANN, events, tags).
+Screenshots use the bundled six-table demo database.
 
 | Deck | Schema map |
-|:----:|:----------:|
+| :---: | :---: |
 | ![Deck overview](docs/images/01-deck.png) | ![Schema constellation](docs/images/02-constellation.png) |
 
 | Table browser | SQL workbench |
-|:-------------:|:-------------:|
+| :---: | :---: |
 | ![Table browser](docs/images/03-table.png) | ![SQL workbench](docs/images/04-sql.png) |
 
-| Vector search (ANN) | Agent chat |
-|:-------------------:|:----------:|
+| Vector search | Agent chat |
+| :---: | :---: |
 | ![Dense ANN lab](docs/images/05-ann.png) | ![Agent chat](docs/images/06-agent.png) |
 
 | MCP bridge | About |
-|:----------:|:-----:|
+| :---: | :---: |
 | ![MCP bridge](docs/images/07-mcp.png) | ![About](docs/images/08-about.png) |
 
-Full page guides: [`docs/`](docs/README.md).
+## Install
 
----
+Download a package, when attached, from
+[GitHub Releases](https://github.com/visorcraft/MongrelDB-Viewer/releases).
+If no package matches your platform, build from source:
 
-## Why this client
-
-MongrelDB has 30+ language bindings. For a Tauri desktop viewer the **best fit is the native Rust engine** (`mongreldb-core` + `mongreldb-query`):
-
-- Same process as the UI - no daemon required for local roots  
-- Full multi-table `Database` + DataFusion SQL + scored AI functions  
-- Exclusive `_meta/.lock` handled correctly in-process  
-- Dense ANN install and embedding providers register against the real core APIs  
-
-## Features
-
-| Surface | What it showcases |
-|---|---|
-| **Signal Deck** | Table roster, O(1) counts, index capability chips |
-| **Schema Constellation** | Living graph of tables → columns → six index kinds |
-| **Table Inspector** | Columns, flags, **index radar** (Bitmap / PGM / FM / ANN / Sparse / MinHash) |
-| **SQL Console** | DataFusion 54 SQL, DDL/DML, scored search functions |
-| **Dense ANN Lab** | Install 384-d ANN (HNSW / DiskANN / IVF × dense / BinarySign / product PQ; MiniLM embed), semantic search + exact rerank |
-| **Agent Nexus** | OpenAI-compatible chat with tool-calling against the open DB |
-| **MCP Bridge** | HTTP JSON-RPC MCP server (and `--mcp-stdio`) for terminal/IDE clients |
-
-MCP and in-app chat are **not exclusive** - both can use the same open database and tool surface at once.
-
-## Prerequisites
-
-- Rust **1.88+** (MongrelDB rust-version)
-- Node.js **22+**
-
-MongrelDB is pulled from crates.io (`mongreldb-core` / `mongreldb-query` / `mongreldb-client` / `mongreldb-kit` **0.64.13** - latest release). No engine source checkout required. `mongreldb-kit` is used to write `kit_schema.json` on demo create so Kit-backed clients can open the root; runtime direct mode uses core/query, and server schema inspection uses `mongreldb-client`'s kit HTTP surface.
-
-Linux also needs typical Tauri system libs (`webkit2gtk`, `libayatana-appindicator`, etc.). See [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/).
-
-## Develop
-
-```bash
-cd mongreldb-viewer
-npm install
-npm run tauri dev
-```
-
-On Linux the binary sets WebKitGTK Wayland-safe defaults at startup
-(`WEBKIT_DISABLE_DMABUF_RENDERER=1`, `WEBKIT_DISABLE_COMPOSITING_MODE=1`) so you
-should not need manual `GDK_BACKEND=x11` workarounds. Export those vars yourself
-only if you need to override the defaults.
-
-## Build
-
-```bash
+```sh
+git clone https://github.com/visorcraft/MongrelDB-Viewer.git
+cd MongrelDB-Viewer
+npm ci
 npm run tauri build
 ```
 
-Optional: disable local ONNX embeddings (remote OpenAI-compatible only):
+Source builds need Rust **1.88+**, Node.js **22+**, and the native libraries
+required by Tauri 2. Bundles are written below
+`src-tauri/target/release/bundle/`.
 
-```toml
-# src-tauri/Cargo.toml
-default = []   # instead of ["local-embeddings"]
-```
+See [installation and builds](docs/installation.md) for platform prerequisites,
+development mode, Linux display behavior, upgrades, and model downloads.
 
-## Connect
-
-### Direct (exclusive, embedded)
-
-1. Choose **Direct folder**
-2. Point at a MongrelDB root (folder with `CATALOG` / `_meta` / `tables`), or browse with the folder picker
-3. Optional catalog credentials / encryption passphrase
-4. **Open database** - or **Create demo DB** in an empty folder  
-5. **Disconnect** from the top bar when finished (releases the exclusive lock)
-
-### Server (multi-client)
+## Five-minute tour
 
 ```sh
-mongreldb-server /path/to/db 8453
+npm ci
+npm run tauri dev
 ```
 
-1. Choose **mongreldb-server**
-2. URL (loopback example: `http://127.0.0.1:8453`)
-3. Optional bearer token / basic auth when the server requires them
-4. **Connect to server**
+Then:
 
-Both modes share the same explorer, SQL console, chat, and MCP tools.
+1. Leave **Direct folder** selected.
+2. Choose an empty directory.
+3. Click **Create demo DB**.
+4. Open **Deck**, **Stars**, **Table**, and **SQL**.
+5. In **ANN**, search `hybrid retrieval across indexes`.
+
+Demo creation writes six tables, foreign keys, representative secondary
+indexes, a 384-dimensional embedding column, and dense HNSW ANN. The first run
+may download `all-MiniLM-L6-v2`. If the download is unavailable, demo creation
+can fall back to zero vectors; use **Re-embed from text column** after the model
+becomes available.
+
+The demo button hides after its first successful use. Reopen the demo through
+**Recent** or **Direct folder** on later launches. The complete walkthrough and
+schema are in [first launch and demo](docs/onboarding.md).
+
+## Product surfaces
+
+| Surface | Purpose |
+| --- | --- |
+| **Deck** | Connection metadata, table and row totals, index capabilities, live insights, and schema-derived SQL recipes |
+| **Stars** | Pan and zoom graph of database, tables, columns, indexes, and Direct-mode foreign keys |
+| **Table** | Column types and flags, embedding source, index options, row samples, and REINDEX |
+| **SQL** | MongrelDB/DataFusion workbench with recipes, in-memory history, result grid, and CSV copy |
+| **ANN** | Direct-mode ANN install/rebuild/backfill and table-scoped semantic search |
+| **Agent** | OpenAI Chat Completions-compatible tool loop over the current database |
+| **MCP** | Local HTTP JSON-RPC server or separate stdio process with the same tool surface |
+| **About** | Product metadata, complete license texts, dependency credits, and runtime notices |
+
+The Viewer recognizes all six public MongrelDB secondary-index families:
+Bitmap, LearnedRange/PGM, FM, ANN, Sparse, and MinHash.
+
+## Safety before use
+
+- SQL, Agent, and MCP tools are not read-only. They can run DDL, DML, REINDEX,
+  and ANN installation without a per-statement confirmation dialog.
+- Direct mode owns an exclusive database lock. Disconnect before another
+  exclusive process opens the root, and disconnect before filesystem backups.
+- The in-app MCP endpoint has no authentication. The UI binds it to
+  `127.0.0.1`; any local process that can reach the port can invoke its tools.
+- Clicking **Save** in Agent stores the base URL and model in WebView
+  `localStorage`. The API key remains in process memory and is cleared on exit.
+- Prompts and tool results sent to a remote chat endpoint can contain database
+  data.
+
+Read the [security policy](SECURITY.md) and
+[operations guide](docs/operations.md) for the full trust model and local-data
+inventory.
 
 ## Documentation
 
-User guides live in [`docs/`](docs/README.md):
+Start here:
 
-- [Onboarding](docs/onboarding.md) - first launch, demo DB, connection modes  
-- [Deck](docs/deck.md) · [Schema map](docs/constellation.md) · [Table](docs/table.md)  
-- [SQL](docs/sql.md) · [Vector search (ANN)](docs/ann.md) · [Agent](docs/agent.md) · [MCP](docs/mcp.md)  
-- [About / Licenses / Credits](docs/about.md)
+- [Documentation index](docs/README.md)
+- [Installation and builds](docs/installation.md)
+- [First launch and demo](docs/onboarding.md)
+- [Direct and server connections](docs/connections.md)
 
-## ANN (384-d, dense by default)
+Use the application:
 
-Default local model: **`all-MiniLM-L6-v2`** (384 dimensions), loaded on demand via [fastembed](https://github.com/Anush008/fastembed-rs) into the user cache (`~/.cache/mongreldb-viewer/models` on Linux).
+- [Deck](docs/deck.md)
+- [Schema map](docs/constellation.md)
+- [Table browser and maintenance](docs/table.md)
+- [SQL workbench](docs/sql.md)
+- [Vector search and ANN](docs/ann.md)
+- [Agent chat](docs/agent.md)
+- [MCP bridge](docs/mcp.md)
+- [About, licenses, and credits](docs/about.md)
 
-From **ANN Lab**:
+Operate and extend it:
 
-1. Pick a table  
-2. Optionally set a text column to backfill  
-3. **Enable 384-d ANN + embed with MiniLM**  
-4. Run semantic search (ANN candidates + exact cosine rerank when available)  
+- [Configuration, local data, and troubleshooting](docs/operations.md)
+- [Architecture and internal interfaces](docs/architecture.md)
+- [Contributing](CONTRIBUTING.md)
+- [Security](SECURITY.md)
 
-You can also configure a **remote OpenAI-compatible embeddings** endpoint from the agent/settings path (provider id `viewer-remote` style) - any model/dimension the remote returns is accepted as long as it matches the column.
-
-## MCP
-
-### In-app HTTP
-
-1. Open a database  
-2. **MCP → Start MCP** (default `http://127.0.0.1:7337/mcp`)  
-3. Point Claude Desktop / Cursor / custom clients at that URL  
-
-### Stdio (terminal)
-
-```bash
-MONGRELDB_VIEWER_PATH=/path/to/db \
-  ./src-tauri/target/release/mongreldb-viewer --mcp-stdio
-```
-
-### Tools
-
-- `list_tables` · `describe_table` · `database_overview` · `constellation`  
-- `execute_sql` · `semantic_search` · `install_dense_ann`  
-- `list_embedding_providers`  
-
-## OpenAI-compatible chat
-
-In **Agent Nexus**, set:
-
-- Base URL (e.g. `https://api.openai.com/v1`, Ollama `http://127.0.0.1:11434/v1`, …)  
-- API key  
-- Model  
-
-The co-pilot uses the **same tools as MCP** and is instructed to showcase MongrelDB’s multi-index AI retrieval honestly (no invented vectors).
-
-## Architecture
+## Architecture at a glance
 
 ```text
-src/                     React Signal Deck UI
-src-tauri/
-  src/
-    db/                  open/inspect/sql/ann against mongreldb-*
-    embeddings/          local MiniLM + remote OpenAI-compatible
-    mcp/                 JSON-RPC tools + HTTP/stdio transports
-    chat/                OpenAI tool-calling loop
-    commands/            Tauri invoke surface
+React + TypeScript
+       |
+       | Tauri invoke
+       v
+Rust command layer
+       |
+       +-- Direct: mongreldb-core + mongreldb-query
+       |
+       +-- Server: mongreldb-client + HTTP
+       |
+       +-- Embeddings: fastembed MiniLM
+       |
+       +-- Shared tools: Agent chat + MCP HTTP/stdio
 ```
 
-Engine crates (crates.io):
+The active connection and embedding hub are shared by SQL, Agent, and in-app
+MCP. Stdio MCP is a separate process and must open its own Direct or Server
+connection. See [architecture](docs/architecture.md) for lifetimes, data flows,
+trust boundaries, source layout, and extension points.
 
-```toml
-mongreldb-core   = "0.64.13"
-mongreldb-query  = "0.64.13"
-mongreldb-client = "0.64.13"
-mongreldb-kit    = "0.64.13"
+## Development gate
+
+```sh
+npm ci
+npm run build
+cargo fmt --manifest-path src-tauri/Cargo.toml --check
+cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets --all-features -- -D warnings
+cargo test --manifest-path src-tauri/Cargo.toml
 ```
+
+Dependency changes also require:
+
+```sh
+scripts/regen-credits.sh
+```
+
+Full workflow: [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Support and policy
+
+- Bugs and feature requests:
+  [GitHub Issues](https://github.com/visorcraft/MongrelDB-Viewer/issues)
+- Vulnerabilities: use private reporting described in [SECURITY.md](SECURITY.md)
+- MongrelDB engine questions:
+  [visorcraft/MongrelDB](https://github.com/visorcraft/MongrelDB)
 
 ## License
 
-MIT OR Apache-2.0 (aligned with MongrelDB).
+MongrelDB Viewer is available under **MIT OR Apache-2.0**. See
+[LICENSE-MIT](LICENSE-MIT) and [LICENSE-APACHE](LICENSE-APACHE).

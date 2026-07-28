@@ -140,7 +140,7 @@ function prettyIndexKind(kind: string): string {
 }
 
 function prettyQuantization(q: string | undefined | null): string {
-  if (!q) return "—";
+  if (!q) return "-";
   switch (q) {
     case "dense":
       return "Dense f32 cosine";
@@ -338,6 +338,8 @@ export default function App() {
     setOverview(ov);
     setSelectedTable(ov.tables[0]?.name ?? "");
     setAnnTable(ov.tables[0]?.name ?? "");
+    setChatMessages([]);
+    setChatInput("");
     setConnectedAt(Date.now());
     if (ov.connectionMode === "server") {
       setRecents(
@@ -510,6 +512,8 @@ export default function App() {
       setSqlResult(null);
       setAnnResult(null);
       setSelectedTable("");
+      setChatMessages([]);
+      setChatInput("");
       setOk(null);
       setView("deck");
     });
@@ -642,12 +646,17 @@ export default function App() {
     withBusy(async () => {
       const table = annTable || selectedTable;
       const tableMeta = overview?.tables.find((t) => t.name === table);
+      const detail = annTableDetail?.name === table ? annTableDetail : null;
+      const activeAnn = annIndexOn(detail);
+      const embeddingColumn = activeAnn?.columnName ?? "embedding";
+      const dimension =
+        detail?.columns.find((c) => c.name === embeddingColumn)?.embeddingDim ?? 384;
       const rebuild = !!opts?.rebuild;
       // ANN is durable in the DB schema - skip install if already active
       // (unless re-embed or rebuild).
       if (tableMeta?.hasAnn && !opts?.reembed && !rebuild) {
         setOk(
-          `ANN already active on ${table} (${tableMeta.embeddingDims[0] ?? 384}-d). Persists with the database. Use Rebuild to change algorithm/quantization.`,
+          `ANN already active on ${table}.${embeddingColumn} (${dimension}-d). Persists with the database. Use Rebuild to change algorithm/quantization.`,
         );
         return;
       }
@@ -656,11 +665,11 @@ export default function App() {
         setError("Pick a text column that exists on this table to re-embed from.");
         return;
       }
-      if (textCol && annTableDetail) {
-        const okCol = annTableDetail.columns.some((c) => c.name === textCol);
+      if (textCol && detail) {
+        const okCol = detail.columns.some((c) => c.name === textCol);
         if (!okCol) {
           setError(
-            `Column \`${textCol}\` is not on \`${table}\`. Choose one of: ${annTableDetail.columns
+            `Column \`${textCol}\` is not on \`${table}\`. Choose one of: ${detail.columns
               .map((c) => c.name)
               .join(", ")}.`,
           );
@@ -687,19 +696,21 @@ export default function App() {
         );
         return;
       }
-      if (annQuantization === "product" && (384 % annProductSubvectors !== 0 || annProductSubvectors < 1)) {
+      if (
+        annQuantization === "product" &&
+        (dimension % annProductSubvectors !== 0 || annProductSubvectors < 1)
+      ) {
         setError(
-          `Product num_subvectors (${annProductSubvectors}) must evenly divide dimension 384.`,
+          `Product num_subvectors (${annProductSubvectors}) must evenly divide dimension ${dimension}.`,
         );
         return;
       }
       const res = await installDenseAnn({
         table,
-        embeddingColumn: "embedding",
-        dimension: 384,
+        embeddingColumn,
+        dimension,
         // Re-embed when: first install, explicit re-embed, or rebuild with a text col selected.
         sourceTextColumn: willEmbed ? textCol || undefined : undefined,
-        backfillLimit: 5000,
         algorithm: annAlgorithm,
         quantization: annQuantization,
         productNumSubvectors:
@@ -760,11 +771,16 @@ export default function App() {
         );
         return;
       }
-      await ensureLocalEmbeddings();
+      const detail = annTableDetail?.name === table ? annTableDetail : null;
+      const activeAnn = annIndexOn(detail);
+      if (!activeAnn) {
+        setError(`ANN metadata for \`${table}\` is still loading. Try again.`);
+        return;
+      }
       const k = Math.max(1, Math.min(100, Math.floor(annK) || 3));
       const res = await semanticSearch({
         table,
-        embeddingColumn: "embedding",
+        embeddingColumn: activeAnn.columnName,
         query: annQuery,
         k,
         exactRerank: true,
@@ -785,10 +801,6 @@ export default function App() {
 
   const onChat = () =>
     withBusy(async () => {
-      if (!chatCfg.apiKey.trim()) {
-        setError("Enter an API key and click Save before chatting.");
-        return;
-      }
       if (!chatInput.trim()) return;
       const next: ChatMessage[] = [
         ...chatMessages,
@@ -831,7 +843,7 @@ export default function App() {
       case "ann":
         return ["Vector search", "Install and try semantic search"];
       case "agent":
-        return ["Agent Chat", "Talk to the open database with your API key"];
+        return ["Agent Chat", "Talk to the open database with an OpenAI-compatible model"];
       case "mcp":
         return ["MCP", "Connect external tools to this database"];
       case "about":
@@ -892,8 +904,8 @@ export default function App() {
             className={`brand-mark${view === "deck" ? " active" : ""}`}
             title={
               overview
-                ? "Overview — database insights"
-                : "MongrelDB Viewer — home"
+                ? "Overview - database insights"
+                : "MongrelDB Viewer - home"
             }
             aria-label="Overview"
             onClick={() => setView("deck")}
@@ -1092,6 +1104,9 @@ export default function App() {
                     void withBusy(async () => {
                       const ov = await openDatabase({
                         path: r.path!,
+                        username: username || undefined,
+                        password: password || undefined,
+                        passphrase: passphrase || undefined,
                         createIfMissing: false,
                       });
                       await applyConnected(ov);
@@ -1100,7 +1115,12 @@ export default function App() {
                     setConnectMode("server");
                     setServerUrl(r.serverUrl);
                     void withBusy(async () => {
-                      const ov = await openServer({ url: r.serverUrl! });
+                      const ov = await openServer({
+                        url: r.serverUrl!,
+                        bearerToken: serverToken || undefined,
+                        username: username || undefined,
+                        password: password || undefined,
+                      });
                       await applyConnected(ov);
                     });
                   }
@@ -1800,7 +1820,7 @@ function TableView({
                           <td>{c.flags.join(", ") || "-"}</td>
                           <td className="muted">
                             {c.embeddingSource ||
-                              (c.embeddingDim != null ? "supplied_by_application" : "—")}
+                              (c.embeddingDim != null ? "supplied_by_application" : "-")}
                           </td>
                         </tr>
                       ))}
@@ -1877,10 +1897,10 @@ function TableView({
                           {i.optionsSummary ||
                             (i.ann
                               ? prettyQuantization(i.ann.quantization)
-                              : "—")}
+                              : "-")}
                         </td>
                         <td className="muted" title={i.semanticIdentity ?? undefined}>
-                          {i.semanticIdentity || "—"}
+                          {i.semanticIdentity || "-"}
                         </td>
                       </tr>
                     ))}
@@ -1925,8 +1945,12 @@ function AnnView(props: {
 }) {
   const selected = props.overview.tables.find((t) => t.name === props.annTable);
   const annReady = !!selected?.hasAnn;
-  const embDim = selected?.embeddingDims?.[0] ?? 384;
   const activeAnn = annIndexOn(props.annTableDetail);
+  const embDim =
+    props.annTableDetail?.columns.find((column) => column.name === activeAnn?.columnName)
+      ?.embeddingDim ??
+    selected?.embeddingDims?.[0] ??
+    384;
   const activeQuant = activeAnn?.ann?.quantization;
   const activeAlgo = activeAnn?.ann?.algorithm ?? "hnsw";
   const textCols = textColumnOptions(props.annTableDetail?.columns ?? []);
@@ -1937,10 +1961,10 @@ function AnnView(props: {
   // Install only when we can actually embed from a real text column on a direct open.
   const canEnable =
     !props.busy && !isServer && !annReady && schemaLoaded && hasTextSource && textColValid;
-  const canReembed = !props.busy && !isServer && annReady && textColValid;
+  const canReembed = !props.busy && !isServer && annReady && !!activeAnn && textColValid;
   // Rebuild does not require a text column (index-only); re-embed is optional if selected.
-  const canRebuild = !props.busy && !isServer && annReady && schemaLoaded;
-  const canSearch = !props.busy && annReady;
+  const canRebuild = !props.busy && !isServer && annReady && schemaLoaded && !!activeAnn;
+  const canSearch = !props.busy && annReady && !!activeAnn;
   const installLabel = `Enable 384-d ${prettyAlgorithm(props.annAlgorithm)} ${prettyQuantization(props.annQuantization)} + embed with MiniLM`;
   const rebuildLabel = `Rebuild as ${prettyAlgorithm(props.annAlgorithm)} ${prettyQuantization(props.annQuantization)}`;
   const quantChanging =
@@ -2005,7 +2029,7 @@ function AnnView(props: {
                   {activeAnn?.optionsSummary
                     ? `Options: ${activeAnn.optionsSummary}. `
                     : null}
-                  Index lives in this database — still available after you close
+                  Index lives in this database - still available after you close
                   the app and reopen the same path. Search on the right is ready.
                   {activeQuant === "binary_sign"
                     ? " BinarySign uses Hamming prefilter; exact cosine rerank still applies when enabled."
@@ -2038,7 +2062,7 @@ function AnnView(props: {
                 onChange={(e) => {
                   const next = e.target.value as "hnsw" | "diskann" | "ivf";
                   props.setAnnAlgorithm(next);
-                  // DiskANN/IVF only support dense — coerce quantization.
+                  // DiskANN/IVF only support dense - coerce quantization.
                   if (next !== "hnsw" && props.annQuantization !== "dense") {
                     props.setAnnQuantization("dense");
                   }
@@ -2318,16 +2342,23 @@ function loadChatConfig(): ChatConfig {
     const raw = localStorage.getItem(CHAT_CONFIG_KEY);
     if (!raw) return { ...DEFAULT_CHAT_CONFIG };
     const parsed = JSON.parse(raw) as Partial<ChatConfig>;
-    return {
+    const config = {
       baseUrl: typeof parsed.baseUrl === "string" ? parsed.baseUrl : DEFAULT_CHAT_CONFIG.baseUrl,
-      apiKey: typeof parsed.apiKey === "string" ? parsed.apiKey : "",
+      apiKey: "",
       model: typeof parsed.model === "string" ? parsed.model : DEFAULT_CHAT_CONFIG.model,
-      systemPrompt:
-        typeof parsed.systemPrompt === "string" || parsed.systemPrompt === null
-          ? parsed.systemPrompt ?? null
-          : null,
+      systemPrompt: null,
     };
+    localStorage.setItem(
+      CHAT_CONFIG_KEY,
+      JSON.stringify({ baseUrl: config.baseUrl, model: config.model }),
+    );
+    return config;
   } catch {
+    try {
+      localStorage.removeItem(CHAT_CONFIG_KEY);
+    } catch {
+      /* storage unavailable */
+    }
     return { ...DEFAULT_CHAT_CONFIG };
   }
 }
@@ -2337,9 +2368,7 @@ function saveChatConfig(cfg: ChatConfig) {
     CHAT_CONFIG_KEY,
     JSON.stringify({
       baseUrl: cfg.baseUrl,
-      apiKey: cfg.apiKey,
       model: cfg.model,
-      systemPrompt: cfg.systemPrompt ?? null,
     }),
   );
 }
@@ -2354,7 +2383,7 @@ function AgentView(props: {
   onSave: () => void;
   busy: boolean;
 }) {
-  const canSend = !props.busy && !!props.chatCfg.apiKey.trim() && !!props.chatInput.trim();
+  const canSend = !props.busy && !!props.chatInput.trim();
   return (
     <div className="grid-2">
       <div className="panel">
@@ -2366,9 +2395,6 @@ function AgentView(props: {
             {props.chatMessages.length === 0 && (
               <div className="muted">
                 Ask about schema, write SQL, or run semantic search. The agent has the same tools as MCP.
-                {!props.chatCfg.apiKey.trim()
-                  ? " Enter an API key and click Save before sending."
-                  : ""}
               </div>
             )}
             {props.chatMessages.map((m, i) => (
@@ -2387,7 +2413,6 @@ function AgentView(props: {
               value={props.chatInput}
               onChange={(e) => props.setChatInput(e.target.value)}
               placeholder="What indexes does documents use? Find rows about hybrid retrieval."
-              disabled={!props.chatCfg.apiKey.trim()}
             />
           </div>
           <button
@@ -2395,11 +2420,7 @@ function AgentView(props: {
             disabled={!canSend}
             onClick={props.onChat}
             title={
-              !props.chatCfg.apiKey.trim()
-                ? "Enter an API key in the endpoint form and click Save"
-                : !props.chatInput.trim()
-                  ? "Type a message first"
-                  : "Send message"
+              !props.chatInput.trim() ? "Type a message first" : "Send message"
             }
           >
             Send
@@ -2428,7 +2449,7 @@ function AgentView(props: {
             />
           </div>
           <div className="field">
-            <label>API key</label>
+            <label>API key (optional, memory-only)</label>
             <input
               type="password"
               value={props.chatCfg.apiKey}
@@ -2443,9 +2464,9 @@ function AgentView(props: {
             />
           </div>
           <p className="muted">
-            Works with OpenAI, Azure OpenAI, SpaceXAI, Ollama (`http://127.0.0.1:11434/v1`), and any
-            compatible gateway. Tool calls share the MCP tool surface. Click <strong>Save</strong> to
-            store these settings for next launch and probe the endpoint.
+            Works with OpenAI, Ollama (`http://127.0.0.1:11434/v1`), and compatible gateways.
+            Tool calls share the MCP tool surface. Click <strong>Save</strong> to store the URL and
+            model for next launch and probe the endpoint. API keys are never saved.
           </p>
         </div>
       </div>

@@ -61,6 +61,10 @@ pub fn tool_definitions() -> Vec<Value> {
                     "embedding_column": { "type": "string", "default": "embedding" },
                     "query": { "type": "string" },
                     "k": { "type": "integer", "default": 5 },
+                    "provider_id": {
+                        "type": "string",
+                        "description": "Required when the embedding column is application-supplied; must match the vector model"
+                    },
                     "exact_rerank": { "type": "boolean", "default": true },
                     "min_score": { "type": "number", "description": "Cosine similarity floor; drops weak hits (exact path only)" },
                     "projection": { "type": "string" }
@@ -255,7 +259,7 @@ impl ToolExecutor {
                         embedding_column,
                         query,
                         k,
-                        provider_id: None,
+                        provider_id: opt_str(&arguments, "provider_id"),
                         projection,
                         exact_rerank,
                         min_score,

@@ -1,54 +1,129 @@
-# Deck (Overview)
+# Deck overview
 
-**MongrelDB Deck** is the home dashboard after you connect. Click the **helmet**
-icon at the top of the left rail anytime to return here.
+Deck is the landing page after a database connects. It summarizes the current
+catalog and turns schema signals into navigation and SQL recipes.
 
-When no database is open, the rail shows only the helmet and **About**. Deck,
-Stars, Table, SQL, ANN, Agent, MCP, and Sync appear after you connect.
+![Deck overview](images/01-deck.png)
 
-## What you see
+## Header
 
-### Hero (Overview)
+The hero shows:
 
-Connection label (path or server URL), engine/query versions, git SHA, ANN
-readiness, and session uptime. Quick jumps: Schema map, SQL, Vector search
-(same ghost style; cyan fill on hover).
+- Direct path or Server URL,
+- connection mode,
+- linked engine and query versions,
+- MongrelDB git SHA,
+- session uptime,
+- quick links to Stars, SQL, and ANN.
 
-### Stat cards
+In Server mode, the displayed engine/query build comes from the crates linked
+into Viewer, not an authoritative remote-daemon version endpoint.
 
-- **Tables** - table count  
-- **Rows** - sum of table row counts (when available)  
-- **Secondary indexes** - total secondary indexes across tables  
+## Summary cards
 
-### Index radar
+| Card | Source |
+| --- | --- |
+| Tables | Number of tables in the loaded overview |
+| Rows | Sum of each table's count |
+| Secondary indexes | Sum of schema secondary-index entries |
 
-How many tables offer each of the six public index kinds (Bitmap, Range, Text,
-ANN, Sparse, MinHash).
+Direct counts come from embedded table handles. Server counts require a request
+per table and can be slower.
 
-### Insights
+ANN-ready table count appears as a hero pill and a generated Insight card.
 
-Schema-driven cards (clickable when they carry a SQL recipe).
+## Index radar
 
-### Try these
+The radar counts how many tables advertise each public index family:
 
-Safe recipes for this catalog - chips open the SQL console with a ready
-statement.
+- Bitmap,
+- LearnedRange/PGM,
+- FM/text,
+- ANN,
+- Sparse,
+- MinHash.
 
-### Tables panel
+It counts table capabilities, not index entries. A table with several Bitmap
+indexes contributes one Bitmap-capable table to the Deck radar.
 
-Roster with row/column/index counts and capability chips. Click a name for
-**Table**, or **Preview** for a sample `SELECT`.
+## Insights
 
-Disconnect by clicking the path chip in the **top bar** (confirms first).
+Viewer derives insights from the current schema. It does not depend on demo
+table names.
 
-## Refresh
+The generator recognizes:
 
-Use **Sync** on the rail (connected only) to reload overview and insights after
-DDL or ANN install.
+- Bitmap and categorical columns for group counts,
+- numeric and score-like columns for ranges and sort recipes,
+- timestamp-like columns for recent-row recipes,
+- Bytes/text/JSON columns for substring recipes,
+- nullable columns for presence filters,
+- embedding columns and ANN readiness.
 
-## Tips
+During connect, it may run up to four small group-by probes to populate live
+cards. A server with expensive scans may therefore take longer to build Deck.
+Clicking an enabled Insight card opens and runs its SQL. Disabled cards have no
+query.
 
-- Helmet → Overview is the fastest way back after exploring.  
-- Capability chips are a quick ANN readiness check before Vector search.  
+## Recipes
 
-Related: [Table](table.md) · [Schema map](constellation.md) · [Onboarding](onboarding.md)
+Deck and SQL share at most 28 unique schema-derived suggestions. Categories
+include:
+
+```text
+catalog
+browse
+stats
+filter
+search
+```
+
+Deck's **Try these** panel shows the first ten. SQL exposes the full generated
+list with category filters. Recipes are starting points, not a safety boundary.
+Review generated SQL before using it on important data.
+
+## Tables panel
+
+Each table row shows:
+
+- row count,
+- column count,
+- secondary-index count,
+- capability chips,
+- embedding dimensions when present.
+
+Click the table name to open **Table**. Click **Preview** to run:
+
+```sql
+SELECT * FROM <table> LIMIT 25
+```
+
+Use Table's **Hide embeddings** projection for wide vector columns.
+
+## Refresh behavior
+
+Use **Sync** on the rail after:
+
+- DDL from another client,
+- server-side schema work,
+- external writes that change counts,
+- ANN maintenance outside Viewer.
+
+Running SQL through Viewer's workbench refreshes overview and insights after
+the request. ANN and REINDEX actions also refresh relevant metadata.
+
+Sync reloads the catalog and graph. It does not reconnect, restart MCP, or
+change Agent state.
+
+## Navigation and disconnect
+
+- Click the helmet to return to Deck.
+- Ctrl/Command+F opens the command palette.
+- Key `1` opens Deck while connected.
+- Click the path/URL chip and confirm **Disconnect** to close the active
+  database handle.
+
+Disconnect does not stop an MCP listener already started from this process.
+
+Related: [First launch](onboarding.md) · [Schema map](constellation.md) ·
+[Table](table.md) · [SQL](sql.md)

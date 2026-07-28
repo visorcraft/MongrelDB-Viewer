@@ -1031,7 +1031,7 @@ select option {
   white-space: nowrap;
 }
 
-/* Path chip doubles as disconnect control — same geometry + danger hover. */
+/* Path chip doubles as disconnect control - same geometry + danger hover. */
 .topbar-actions button.path-disconnect-btn {
   cursor: pointer;
   font: inherit;

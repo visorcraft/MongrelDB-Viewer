@@ -972,14 +972,15 @@ mod tests {
         );
 
         // Viewer direct-open path (WAL recovery, catalog load, session bind).
-        let session = DbSession::open(&path, None, None, None, OpenMode::Open).unwrap_or_else(|e| {
-            panic!(
-                "frozen sample demo (written by mongreldb {COMPAT_FIXTURE_WRITTEN_BY}) \
+        let session =
+            DbSession::open(&path, None, None, None, OpenMode::Open).unwrap_or_else(|e| {
+                panic!(
+                    "frozen sample demo (written by mongreldb {COMPAT_FIXTURE_WRITTEN_BY}) \
                  failed to open on current engine: {e}\n\
                  path={}",
-                path.display()
-            )
-        });
+                    path.display()
+                )
+            });
 
         assert_demo_catalog(&session.database);
 
@@ -1076,9 +1077,7 @@ mod tests {
              \"git_sha\": \"{}\",\n  \"with_ann\": false,\n  \
              \"schema\": \"viewer create_demo (no ANN)\",\n  \
              \"purpose\": \"cross-version open regression for mongreldb-viewer\"\n}}\n",
-            COMPAT_FIXTURE_WRITTEN_BY,
-            engine.engine_version,
-            engine.mongreldb_git_sha,
+            COMPAT_FIXTURE_WRITTEN_BY, engine.engine_version, engine.mongreldb_git_sha,
         );
         std::fs::write(staging.join("FIXTURE_META.json"), meta).expect("write FIXTURE_META.json");
 
@@ -1092,7 +1091,11 @@ mod tests {
             .status()
             .expect("spawn tar to pack fixture");
         assert!(status.success(), "tar pack failed: {status}");
-        assert!(archive.is_file(), "archive not written: {}", archive.display());
+        assert!(
+            archive.is_file(),
+            "archive not written: {}",
+            archive.display()
+        );
 
         eprintln!(
             "wrote {} ({} bytes) from engine {}",

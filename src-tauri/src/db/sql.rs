@@ -11,6 +11,24 @@ use crate::db::session::DbSession;
 use crate::error::{AppError, AppResult};
 use crate::models::{ReindexRequest, ReindexResult, SqlRequest, SqlResult};
 
+const JS_SAFE_INTEGER: i64 = 9_007_199_254_740_991;
+
+pub(crate) fn json_i64(value: i64) -> serde_json::Value {
+    if (-JS_SAFE_INTEGER..=JS_SAFE_INTEGER).contains(&value) {
+        serde_json::json!(value)
+    } else {
+        serde_json::Value::String(value.to_string())
+    }
+}
+
+pub(crate) fn json_u64(value: u64) -> serde_json::Value {
+    if value <= JS_SAFE_INTEGER as u64 {
+        serde_json::json!(value)
+    } else {
+        serde_json::Value::String(value.to_string())
+    }
+}
+
 pub async fn run_sql(db: &DbSession, req: SqlRequest) -> AppResult<SqlResult> {
     run_sql_session(Arc::clone(&db.session), req).await
 }
@@ -178,7 +196,7 @@ fn array_value_json(array: &ArrayRef, row: usize) -> serde_json::Value {
         }
         DataType::Int64 => {
             let a = array.as_any().downcast_ref::<Int64Array>().unwrap();
-            serde_json::json!(a.value(row))
+            json_i64(a.value(row))
         }
         DataType::UInt8 => {
             let a = array.as_any().downcast_ref::<UInt8Array>().unwrap();
@@ -194,7 +212,7 @@ fn array_value_json(array: &ArrayRef, row: usize) -> serde_json::Value {
         }
         DataType::UInt64 => {
             let a = array.as_any().downcast_ref::<UInt64Array>().unwrap();
-            serde_json::json!(a.value(row))
+            json_u64(a.value(row))
         }
         DataType::Float32 => {
             let a = array.as_any().downcast_ref::<Float32Array>().unwrap();
@@ -272,5 +290,27 @@ mod hex {
             out.push('…');
         }
         out
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{json_i64, json_u64, JS_SAFE_INTEGER};
+
+    #[test]
+    fn preserves_large_integers_as_strings() {
+        assert_eq!(
+            json_i64(JS_SAFE_INTEGER),
+            serde_json::json!(JS_SAFE_INTEGER)
+        );
+        assert_eq!(
+            json_i64(JS_SAFE_INTEGER + 1),
+            serde_json::json!((JS_SAFE_INTEGER + 1).to_string())
+        );
+        assert_eq!(
+            json_i64(-JS_SAFE_INTEGER - 1),
+            serde_json::json!((-JS_SAFE_INTEGER - 1).to_string())
+        );
+        assert_eq!(json_u64(u64::MAX), serde_json::json!(u64::MAX.to_string()));
     }
 }

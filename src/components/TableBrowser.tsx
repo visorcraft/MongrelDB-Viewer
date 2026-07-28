@@ -15,15 +15,15 @@ export function TableBrowser({ table, detail, onOpenSql }: Props) {
   const [busy, setBusy] = useState(false);
   const [cols, setCols] = useState<string>("*");
 
-  const load = async () => {
+  const load = async (selectedCols = cols) => {
     if (!table) return;
     setBusy(true);
     setError(null);
     try {
       const projection =
-        cols === "*"
+        selectedCols === "*"
           ? "*"
-          : cols
+          : selectedCols
               .split(",")
               .map((c) => c.trim())
               .filter(Boolean)
@@ -43,7 +43,7 @@ export function TableBrowser({ table, detail, onOpenSql }: Props) {
 
   useEffect(() => {
     setCols("*");
-    void load();
+    void load("*");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [table]);
 
