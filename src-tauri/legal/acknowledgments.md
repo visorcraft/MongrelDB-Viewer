@@ -60,10 +60,10 @@ regenerate inventories with `scripts/regen-credits.sh`).
 
 | Crate | Role | License |
 | ----- | ---- | ------- |
-| `mongreldb-core` 0.64.13 | Embedded storage engine | MIT OR Apache-2.0 |
-| `mongreldb-query` 0.64.13 | SQL / DataFusion query layer | MIT OR Apache-2.0 |
-| `mongreldb-client` 0.64.13 | HTTP client for mongreldb-server | MIT OR Apache-2.0 |
-| `mongreldb-kit` 0.64.13 | Kit schema sidecar for demo roots | MIT OR Apache-2.0 |
+| `mongreldb-core` 0.64.14 | Embedded storage engine | MIT OR Apache-2.0 |
+| `mongreldb-query` 0.64.14 | SQL / DataFusion query layer | MIT OR Apache-2.0 |
+| `mongreldb-client` 0.64.14 | HTTP client for mongreldb-server | MIT OR Apache-2.0 |
+| `mongreldb-kit` 0.64.14 | Kit schema sidecar for demo roots | MIT OR Apache-2.0 |
 | `arrow` | Columnar batches | Apache-2.0 |
 
 ### Embeddings
