@@ -215,6 +215,11 @@ Full workflow: [CONTRIBUTING.md](CONTRIBUTING.md).
 - MongrelDB engine questions:
   [visorcraft/MongrelDB](https://github.com/visorcraft/MongrelDB)
 
+## Related tools
+
+- [Mongrel](https://visorcraft.com/mongreldb) — Commercial multi-system workbench with native MongrelDB support.
+- [MongrelDB Viewer](https://github.com/visorcraft/MongrelDB-Viewer) — Free, open-source MongrelDB GUI and MCP server.
+
 ## License
 
 MongrelDB Viewer is available under **MIT OR Apache-2.0**. See
