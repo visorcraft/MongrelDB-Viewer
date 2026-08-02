@@ -11,6 +11,8 @@
   chat through an OpenAI-compatible model, and expose the open database over MCP.
 </p>
 
+MongrelDB Viewer is free and open source. Use it as a [local vector database GUI](https://www.mongreldb.com/local-vector-database-gui/) or expose the open database through its [local vector database MCP server](https://www.mongreldb.com/local-vector-database-mcp/).
+
 <p align="center">
   <a href="https://github.com/visorcraft/MongrelDB-Viewer/releases/latest"><img src="https://img.shields.io/github/v/release/visorcraft/MongrelDB-Viewer?sort=semver" alt="Latest release" /></a>
   <img src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg" alt="License: MIT OR Apache-2.0" />
