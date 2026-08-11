@@ -954,12 +954,6 @@
     "repository": "https://github.com/apache/datafusion"
   },
   {
-    "name": "datafusion-datasource-parquet",
-    "version": "54.0.0",
-    "license": "Apache-2.0",
-    "repository": "https://github.com/apache/datafusion"
-  },
-  {
     "name": "datafusion-doc",
     "version": "54.0.0",
     "license": "Apache-2.0",
@@ -1950,12 +1944,6 @@
     "repository": "https://github.com/RustCrypto/utils"
   },
   {
-    "name": "integer-encoding",
-    "version": "3.0.4",
-    "license": "MIT",
-    "repository": "https://github.com/dermesser/integer-encoding-rs"
-  },
-  {
     "name": "interpolate_name",
     "version": "0.2.4",
     "license": "MIT",
@@ -2323,55 +2311,55 @@
   },
   {
     "name": "mongreldb-client",
-    "version": "0.64.14",
+    "version": "0.64.16",
     "license": "MIT OR Apache-2.0",
     "repository": "https://github.com/visorcraft/MongrelDB"
   },
   {
     "name": "mongreldb-core",
-    "version": "0.64.14",
+    "version": "0.64.16",
     "license": "MIT OR Apache-2.0",
     "repository": "https://github.com/visorcraft/MongrelDB"
   },
   {
     "name": "mongreldb-fault",
-    "version": "0.64.14",
+    "version": "0.64.16",
     "license": "MIT OR Apache-2.0",
     "repository": "https://github.com/visorcraft/MongrelDB"
   },
   {
     "name": "mongreldb-kit",
-    "version": "0.64.14",
+    "version": "0.64.16",
     "license": "MIT OR Apache-2.0",
     "repository": "https://github.com/visorcraft/MongrelDB-Kit"
   },
   {
     "name": "mongreldb-kit-core",
-    "version": "0.64.14",
+    "version": "0.64.16",
     "license": "MIT OR Apache-2.0",
     "repository": "https://github.com/visorcraft/MongrelDB-Kit"
   },
   {
     "name": "mongreldb-log",
-    "version": "0.64.14",
+    "version": "0.64.16",
     "license": "MIT OR Apache-2.0",
     "repository": "https://github.com/visorcraft/MongrelDB"
   },
   {
     "name": "mongreldb-protocol",
-    "version": "0.64.14",
+    "version": "0.64.16",
     "license": "MIT OR Apache-2.0",
     "repository": "https://github.com/visorcraft/MongrelDB"
   },
   {
     "name": "mongreldb-query",
-    "version": "0.64.14",
+    "version": "0.64.16",
     "license": "MIT OR Apache-2.0",
     "repository": "https://github.com/visorcraft/MongrelDB"
   },
   {
     "name": "mongreldb-types",
-    "version": "0.64.14",
+    "version": "0.64.16",
     "license": "MIT OR Apache-2.0",
     "repository": "https://github.com/visorcraft/MongrelDB"
   },
@@ -2688,12 +2676,6 @@
     "repository": "https://github.com/soc/option-ext.git"
   },
   {
-    "name": "ordered-float",
-    "version": "2.10.1",
-    "license": "MIT",
-    "repository": "https://github.com/reem/rust-ordered-float"
-  },
-  {
     "name": "ordered-stream",
     "version": "0.2.0",
     "license": "MIT OR Apache-2.0",
@@ -2740,12 +2722,6 @@
     "version": "0.9.12",
     "license": "MIT OR Apache-2.0",
     "repository": "https://github.com/Amanieu/parking_lot"
-  },
-  {
-    "name": "parquet",
-    "version": "58.3.0",
-    "license": "Apache-2.0",
-    "repository": "https://github.com/apache/arrow-rs"
   },
   {
     "name": "password-hash",
@@ -3426,12 +3402,6 @@
     "repository": "https://github.com/dtolnay/semver"
   },
   {
-    "name": "seq-macro",
-    "version": "0.3.6",
-    "license": "MIT OR Apache-2.0",
-    "repository": "https://github.com/dtolnay/seq-macro"
-  },
-  {
     "name": "serde",
     "version": "1.0.229",
     "license": "MIT OR Apache-2.0",
@@ -3592,12 +3562,6 @@
     "version": "1.15.2",
     "license": "MIT OR Apache-2.0",
     "repository": "https://github.com/servo/rust-smallvec"
-  },
-  {
-    "name": "snap",
-    "version": "1.1.2",
-    "license": "BSD-3-Clause",
-    "repository": "https://github.com/BurntSushi/rust-snappy"
   },
   {
     "name": "socket2",
@@ -3868,12 +3832,6 @@
     "version": "2.0.19",
     "license": "MIT OR Apache-2.0",
     "repository": "https://github.com/dtolnay/thiserror"
-  },
-  {
-    "name": "thrift",
-    "version": "0.17.0",
-    "license": "Apache-2.0",
-    "repository": "https://github.com/apache/thrift/tree/master/lib/rs"
   },
   {
     "name": "tiff",
@@ -4894,12 +4852,6 @@
     "version": "0.11.3",
     "license": "Unicode-3.0",
     "repository": "https://github.com/unicode-org/icu4x"
-  },
-  {
-    "name": "zlib-rs",
-    "version": "0.6.6",
-    "license": "Zlib",
-    "repository": "https://github.com/trifectatechfoundation/zlib-rs"
   },
   {
     "name": "zmij",

@@ -22,15 +22,15 @@ If you have questions about license compliance, please contact
 
 ## Licenses in use
 
-- **Apache License 2.0** (568 crates)
-- **MIT License** (187 crates)
+- **Apache License 2.0** (564 crates)
+- **MIT License** (185 crates)
 - **Unicode License v3** (19 crates)
-- **BSD 3-Clause &quot;New&quot; or &quot;Revised&quot; License** (13 crates)
+- **BSD 3-Clause &quot;New&quot; or &quot;Revised&quot; License** (12 crates)
 - **ISC License** (6 crates)
 - **Mozilla Public License 2.0** (5 crates)
 - **BSD 2-Clause &quot;Simplified&quot; License** (4 crates)
-- **zlib License** (3 crates)
 - **Community Data License Agreement Permissive 2.0** (2 crates)
+- **zlib License** (2 crates)
 - **BSD Zero Clause License** (1 crate)
 - **Boost Software License 1.0** (1 crate)
 - **Creative Commons Zero v1.0 Universal** (1 crate)
@@ -512,7 +512,6 @@ Used by:
 - [`encoding_rs 0.8.35`](https://github.com/hsivonen/encoding_rs)
 - [`ort-sys 2.0.0-rc.12`](https://github.com/pykeio/ort)
 - [`ort 2.0.0-rc.12`](https://github.com/pykeio/ort)
-- [`parquet 58.3.0`](https://github.com/apache/arrow-rs)
 - [`secrecy 0.10.3`](https://github.com/iqlusioninc/crates/tree/main/secrecy)
 - [`static_assertions 1.1.0`](https://github.com/nvzqz/static-assertions-rs)
 - [`utf8_iter 1.0.4`](https://github.com/hsivonen/utf8_iter)
@@ -1396,7 +1395,6 @@ Used by:
 - [`datafusion-datasource-arrow 54.0.0`](https://github.com/apache/datafusion)
 - [`datafusion-datasource-csv 54.0.0`](https://github.com/apache/datafusion)
 - [`datafusion-datasource-json 54.0.0`](https://github.com/apache/datafusion)
-- [`datafusion-datasource-parquet 54.0.0`](https://github.com/apache/datafusion)
 - [`datafusion-datasource 54.0.0`](https://github.com/apache/datafusion)
 - [`datafusion-doc 54.0.0`](https://github.com/apache/datafusion)
 - [`datafusion-execution 54.0.0`](https://github.com/apache/datafusion)
@@ -11974,15 +11972,15 @@ Used by:
 - [`jni 0.22.4`](https://github.com/jni-rs/jni-rs)
 - [`libc 0.2.186`](https://github.com/rust-lang/libc)
 - [`miniz_oxide 0.8.9`](https://github.com/Frommi/miniz_oxide/tree/master/miniz_oxide)
-- [`mongreldb-client 0.64.14`](https://github.com/visorcraft/MongrelDB)
-- [`mongreldb-core 0.64.14`](https://github.com/visorcraft/MongrelDB)
-- [`mongreldb-fault 0.64.14`](https://github.com/visorcraft/MongrelDB)
-- [`mongreldb-kit-core 0.64.14`](https://github.com/visorcraft/MongrelDB-Kit)
-- [`mongreldb-kit 0.64.14`](https://github.com/visorcraft/MongrelDB-Kit)
-- [`mongreldb-log 0.64.14`](https://github.com/visorcraft/MongrelDB)
-- [`mongreldb-protocol 0.64.14`](https://github.com/visorcraft/MongrelDB)
-- [`mongreldb-query 0.64.14`](https://github.com/visorcraft/MongrelDB)
-- [`mongreldb-types 0.64.14`](https://github.com/visorcraft/MongrelDB)
+- [`mongreldb-client 0.64.16`](https://github.com/visorcraft/MongrelDB)
+- [`mongreldb-core 0.64.16`](https://github.com/visorcraft/MongrelDB)
+- [`mongreldb-fault 0.64.16`](https://github.com/visorcraft/MongrelDB)
+- [`mongreldb-kit-core 0.64.16`](https://github.com/visorcraft/MongrelDB-Kit)
+- [`mongreldb-kit 0.64.16`](https://github.com/visorcraft/MongrelDB-Kit)
+- [`mongreldb-log 0.64.16`](https://github.com/visorcraft/MongrelDB)
+- [`mongreldb-protocol 0.64.16`](https://github.com/visorcraft/MongrelDB)
+- [`mongreldb-query 0.64.16`](https://github.com/visorcraft/MongrelDB)
+- [`mongreldb-types 0.64.16`](https://github.com/visorcraft/MongrelDB)
 - [`monostate-impl 0.1.18`](https://github.com/dtolnay/monostate)
 - [`monostate 0.1.18`](https://github.com/dtolnay/monostate)
 - [`ndk-sys 0.6.0+11769913`](https://github.com/rust-mobile/ndk)
@@ -12026,7 +12024,6 @@ Used by:
 - [`rustversion 1.0.23`](https://github.com/dtolnay/rustversion)
 - [`ryu 1.0.23`](https://github.com/dtolnay/ryu)
 - [`semver 1.0.28`](https://github.com/dtolnay/semver)
-- [`seq-macro 0.3.6`](https://github.com/dtolnay/seq-macro)
 - [`serde-untagged 0.1.9`](https://github.com/dtolnay/serde-untagged)
 - [`serde 1.0.229`](https://github.com/serde-rs/serde)
 - [`serde_core 1.0.229`](https://github.com/serde-rs/serde)
@@ -12058,7 +12055,6 @@ Used by:
 - [`thiserror-impl 2.0.19`](https://github.com/dtolnay/thiserror)
 - [`thiserror 1.0.69`](https://github.com/dtolnay/thiserror)
 - [`thiserror 2.0.19`](https://github.com/dtolnay/thiserror)
-- [`thrift 0.17.0`](https://github.com/apache/thrift/tree/master/lib/rs)
 - [`time-core 0.1.9`](https://github.com/time-rs/time)
 - [`time-macros 0.2.31`](https://github.com/time-rs/time)
 - [`time 0.3.53`](https://github.com/time-rs/time)
@@ -13042,44 +13038,6 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&
 ### BSD 3-Clause &quot;New&quot; or &quot;Revised&quot; License
 
 Used by:
-- [`snap 1.1.2`](https://github.com/BurntSushi/rust-snappy)
-
-```
-Copyright 2011, The Snappy-Rust Authors. All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are
-met:
-
-    * Redistributions of source code must retain the above copyright
-notice, this list of conditions and the following disclaimer.
-    * Redistributions in binary form must reproduce the above
-copyright notice, this list of conditions and the following disclaimer
-in the documentation and/or other materials provided with the
-distribution.
-    * Neither the name of the copyright holder nor the names of its
-contributors may be used to endorse or promote products derived from
-this software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-&quot;AS IS&quot; AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-```
-
----
-
-### BSD 3-Clause &quot;New&quot; or &quot;Revised&quot; License
-
-Used by:
 - [`encoding_rs 0.8.35`](https://github.com/hsivonen/encoding_rs)
 
 ```
@@ -13811,7 +13769,6 @@ THE SOFTWARE.
 
 Used by:
 - [`new_debug_unreachable 1.0.6`](https://github.com/mbrubeck/rust-debug-unreachable)
-- [`ordered-float 2.10.1`](https://github.com/reem/rust-ordered-float)
 
 ```
 Copyright (c) 2015 Jonathan Reem
@@ -16188,40 +16145,6 @@ SOFTWARE.
 ### MIT License
 
 Used by:
-- [`integer-encoding 3.0.4`](https://github.com/dermesser/integer-encoding-rs)
-
-```
-The MIT License (MIT)
-
-Copyright (c) 2016 Google Inc. (lewinb@google.com) -- though not an official
-Google product or in any way related!
-Copyright (c) 2018-2020 Lewin Bormann (lbo@spheniscida.de)
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the &quot;Software&quot;), to
-deal in the Software without restriction, including without limitation the
-rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
-sell copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
-IN THE SOFTWARE.
-
-```
-
----
-
-### MIT License
-
-Used by:
 - [`derive_more-impl 2.1.1`](https://github.com/JelteF/derive_more)
 - [`derive_more 2.1.1`](https://github.com/JelteF/derive_more)
 
@@ -18022,36 +17945,6 @@ SPDX-License-Identifier: Unicode-3.0
 
 Portions of ICU4X may have been adapted from ICU4C and/or ICU4J.
 ICU 1.8.1 to ICU 57.1 © 1995-2016 International Business Machines Corporation and others.
-
-```
-
----
-
-### zlib License
-
-Used by:
-- [`zlib-rs 0.6.6`](https://github.com/trifectatechfoundation/zlib-rs)
-
-```
-(C) 2024 Trifecta Tech Foundation 
-
-This software is provided &#x27;as-is&#x27;, without any express or implied
-warranty. In no event will the authors be held liable for any damages
-arising from the use of this software.
-
-Permission is granted to anyone to use this software for any purpose,
-including commercial applications, and to alter it and redistribute it
-freely, subject to the following restrictions:
-
-1. The origin of this software must not be misrepresented; you must not
-   claim that you wrote the original software. If you use this software
-   in a product, an acknowledgment in the product documentation would be
-   appreciated but is not required.
-
-2. Altered source versions must be plainly marked as such, and must not be
-   misrepresented as being the original software.
-
-3. This notice may not be removed or altered from any source distribution.
 
 ```
 

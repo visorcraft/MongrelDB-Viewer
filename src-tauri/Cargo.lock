@@ -1605,7 +1605,6 @@ dependencies = [
  "datafusion-datasource-arrow",
  "datafusion-datasource-csv",
  "datafusion-datasource-json",
- "datafusion-datasource-parquet",
  "datafusion-execution",
  "datafusion-expr",
  "datafusion-expr-common",
@@ -1630,7 +1629,6 @@ dependencies = [
  "log",
  "object_store",
  "parking_lot",
- "parquet",
  "sqlparser",
  "tempfile",
  "tokio",
@@ -1705,7 +1703,6 @@ dependencies = [
  "libc",
  "log",
  "object_store",
- "parquet",
  "recursive",
  "sqlparser",
  "tokio",
@@ -1828,37 +1825,6 @@ dependencies = [
  "object_store",
  "tokio",
  "tokio-stream",
-]
-
-[[package]]
-name = "datafusion-datasource-parquet"
-version = "54.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ffd2499c1bee0eeccf6a57156105700eeeb17bc701899ac719183c4e74231450"
-dependencies = [
- "arrow",
- "async-trait",
- "bytes",
- "datafusion-common",
- "datafusion-common-runtime",
- "datafusion-datasource",
- "datafusion-execution",
- "datafusion-expr",
- "datafusion-functions",
- "datafusion-functions-aggregate-common",
- "datafusion-physical-expr",
- "datafusion-physical-expr-adapter",
- "datafusion-physical-expr-common",
- "datafusion-physical-plan",
- "datafusion-pruning",
- "datafusion-session",
- "futures",
- "itertools",
- "log",
- "object_store",
- "parking_lot",
- "parquet",
- "tokio",
 ]
 
 [[package]]
@@ -2726,7 +2692,6 @@ checksum = "843fba2746e448b37e26a819579957415c8cef339bf08564fe8b7ddbd959573c"
 dependencies = [
  "crc32fast",
  "miniz_oxide",
- "zlib-rs",
 ]
 
 [[package]]
@@ -3775,12 +3740,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "integer-encoding"
-version = "3.0.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8bb03732005da905c88227371639bf1ad885cc712789c011c31c5fb3ab3ccf02"
-
-[[package]]
 name = "interpolate_name"
 version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4339,9 +4298,9 @@ dependencies = [
 
 [[package]]
 name = "mongreldb-client"
-version = "0.64.14"
+version = "0.64.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "39c5bcdf99dae02e7e9fcc831d796fe529b713284d40a54678bb37f74f79c549"
+checksum = "33162e671d3abee26aab467d52b5d94c5e885230acc53d9686560c332973f440"
 dependencies = [
  "arrow",
  "base64 0.22.1",
@@ -4363,9 +4322,9 @@ dependencies = [
 
 [[package]]
 name = "mongreldb-core"
-version = "0.64.14"
+version = "0.64.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "811842eb0e672b68564736fbbf166bcd249961440a0adec24d271a486922ed3f"
+checksum = "71dc712fb2e5e46518f72cb06e72051d70e2c15eab0468ec4593b02e4167b405"
 dependencies = [
  "aes-gcm",
  "arc-swap",
@@ -4404,18 +4363,18 @@ dependencies = [
 
 [[package]]
 name = "mongreldb-fault"
-version = "0.64.14"
+version = "0.64.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7e593af60090c32c6d4d5dd2bab8598291cfcccbf00601199c947a578f798ba4"
+checksum = "155625ba3e8b2b1c5aed05d335bd65e284da409a3ed0da0cd87685b9a3857643"
 dependencies = [
  "thiserror 1.0.69",
 ]
 
 [[package]]
 name = "mongreldb-kit"
-version = "0.64.14"
+version = "0.64.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "80d73061a2359202999525945f682bd608cf126a08abdec7780e469de322e251"
+checksum = "4080f2624eea9ce740950fb8be2988d2fa84dcf9f8b8dc182bc1dad5617b48e8"
 dependencies = [
  "arrow",
  "bincode",
@@ -4426,31 +4385,31 @@ dependencies = [
  "regex",
  "serde",
  "serde_json",
- "thiserror 1.0.69",
+ "thiserror 2.0.19",
  "tokio",
  "uuid",
 ]
 
 [[package]]
 name = "mongreldb-kit-core"
-version = "0.64.14"
+version = "0.64.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a26b0b82dab6718e0da194a969cf1c23e085f4b99a75cea1dc8ad43e73b6e222"
+checksum = "75cc0329095a9ba09569e8d7db8fbcd742deff8e4700416e1702d39d51014152"
 dependencies = [
  "hex",
  "regex",
  "serde",
  "serde_json",
- "sha2 0.10.9",
- "thiserror 1.0.69",
+ "sha2 0.11.0",
+ "thiserror 2.0.19",
  "uuid",
 ]
 
 [[package]]
 name = "mongreldb-log"
-version = "0.64.14"
+version = "0.64.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "857178a00579be29d09672b7b20eeaa27d6b26205de7b06c90eec9111a48d68d"
+checksum = "7e59740d55ed649d9d4a72ce83a405bbaf582193a6015f2aaf6809b2d0fa5e3a"
 dependencies = [
  "mongreldb-types",
  "serde",
@@ -4460,9 +4419,9 @@ dependencies = [
 
 [[package]]
 name = "mongreldb-protocol"
-version = "0.64.14"
+version = "0.64.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "22075b29b05c1e2a21011d2719b8ebeef90599c1395a276f47c0cc8550c441c1"
+checksum = "f97bbb7815e5e156608ca84f3b0f46058643f7f742955248c54cb7928d466299"
 dependencies = [
  "mongreldb-types",
  "prost",
@@ -4479,9 +4438,9 @@ dependencies = [
 
 [[package]]
 name = "mongreldb-query"
-version = "0.64.14"
+version = "0.64.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a592f8604ed45a89ceadaf83eb32cfa64fe709ba7c9a94fc0352ddc3891b1ac0"
+checksum = "fd0664c7bfdc6d8287f50798cf29a7f621ab17f51d83dfa253373fe985beeda6"
 dependencies = [
  "aes-gcm",
  "arrow",
@@ -4507,9 +4466,9 @@ dependencies = [
 
 [[package]]
 name = "mongreldb-types"
-version = "0.64.14"
+version = "0.64.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ff53a4a87107393cf3eb0259634bf0a00ae62e873da0801b874a6d95a98701d7"
+checksum = "055757102139e1e1f54e36ce17b64dc66347a9e0485d97ed5b42786762c1616c"
 dependencies = [
  "getrandom 0.2.17",
  "serde",
@@ -4519,7 +4478,7 @@ dependencies = [
 
 [[package]]
 name = "mongreldb-viewer"
-version = "1.6.6"
+version = "1.6.7"
 dependencies = [
  "arrow",
  "async-trait",
@@ -5121,15 +5080,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "04744f49eae99ab78e0d5c0b603ab218f515ea8cfe5a456d7629ad883a3b6e7d"
 
 [[package]]
-name = "ordered-float"
-version = "2.10.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "68f19d67e5a2795c94e73e0bb1cc1a7edeb2e28efd39e2e1c9b7a40c1108b11c"
-dependencies = [
- "num-traits",
-]
-
-[[package]]
 name = "ordered-stream"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5215,42 +5165,6 @@ dependencies = [
  "redox_syscall",
  "smallvec",
  "windows-link 0.2.1",
-]
-
-[[package]]
-name = "parquet"
-version = "58.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5dafa7d01085b62a47dd0c1829550a0a36710ea9c4fe358a05a85477cec8a908"
-dependencies = [
- "ahash",
- "arrow-array",
- "arrow-buffer",
- "arrow-data",
- "arrow-ipc",
- "arrow-schema",
- "arrow-select",
- "base64 0.22.1",
- "brotli",
- "bytes",
- "chrono",
- "flate2",
- "futures",
- "half",
- "hashbrown 0.17.1",
- "lz4_flex 0.13.1",
- "num-bigint",
- "num-integer",
- "num-traits",
- "object_store",
- "paste",
- "seq-macro",
- "simdutf8",
- "snap",
- "thrift",
- "tokio",
- "twox-hash",
- "zstd",
 ]
 
 [[package]]
@@ -6508,12 +6422,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "seq-macro"
-version = "0.3.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1bc711410fbe7399f390ca1c3b60ad0f53f80e95c5eb935e52268a0e2cd49acc"
-
-[[package]]
 name = "serde"
 version = "1.0.229"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6781,12 +6689,6 @@ name = "smallvec"
 version = "1.15.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8ed6a63f02c8539c91a8685a86f4099661ba3da017932f6ebbea6de3f0fa7c90"
-
-[[package]]
-name = "snap"
-version = "1.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "199905e6153d6405f9728fe44daace35f8f837bbf830bb6e85fbd5828709a886"
 
 [[package]]
 name = "socket2"
@@ -7459,17 +7361,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 3.0.1",
-]
-
-[[package]]
-name = "thrift"
-version = "0.17.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7e54bc85fc7faa8bc175c4bab5b92ba8d9a3ce893d0e9f42cc455c8ab16a9e09"
-dependencies = [
- "byteorder",
- "integer-encoding",
- "ordered-float",
 ]
 
 [[package]]
@@ -9215,12 +9106,6 @@ dependencies = [
  "quote",
  "syn 2.0.119",
 ]
-
-[[package]]
-name = "zlib-rs"
-version = "0.6.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b142a20ec14a91d5bc708c1dc21b080c550113d8aa77afa29635673a65dd02c5"
 
 [[package]]
 name = "zmij"
