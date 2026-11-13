@@ -46,15 +46,15 @@ dirs = "7"
 
 # Best-fitting MongrelDB stack for Tauri: embed core for direct files,
 # plus the official HTTP client for mongreldb-server multi-client access.
-# Aligned train with crates.io 0.65.1.
+# Aligned train with crates.io 0.66.0.
 # mongreldb-kit is used only to write kit_schema.json on demo create so the
 # resulting root is openable by Kit-backed clients (e.g. Mongrel desktop).
 # Runtime direct mode still uses core/query; server schema inspection uses
 # mongreldb-client's kit_schema HTTP surface.
-mongreldb-core = "0.65.1"
-mongreldb-query = "0.65.1"
-mongreldb-client = "0.65.1"
-mongreldb-kit = "0.65.1"
+mongreldb-core = "0.66.0"
+mongreldb-query = "0.66.0"
+mongreldb-client = "0.66.0"
+mongreldb-kit = "0.66.0"
 
 # Local dense embeddings (default model: all-MiniLM-L6-v2, 384 dims)
 fastembed = { version = "7", optional = true }

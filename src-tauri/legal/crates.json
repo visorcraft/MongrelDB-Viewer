@@ -7,19 +7,19 @@
   },
   {
     "name": "aead",
-    "version": "0.5.2",
+    "version": "0.6.1",
     "license": "MIT OR Apache-2.0",
     "repository": "https://github.com/RustCrypto/traits"
   },
   {
     "name": "aes",
-    "version": "0.8.4",
+    "version": "0.9.4",
     "license": "MIT OR Apache-2.0",
     "repository": "https://github.com/RustCrypto/block-ciphers"
   },
   {
     "name": "aes-gcm",
-    "version": "0.10.3",
+    "version": "0.11.1",
     "license": "Apache-2.0 OR MIT",
     "repository": "https://github.com/RustCrypto/AEADs"
   },
@@ -103,9 +103,9 @@
   },
   {
     "name": "argon2",
-    "version": "0.5.3",
+    "version": "0.6.0",
     "license": "MIT OR Apache-2.0",
-    "repository": "https://github.com/RustCrypto/password-hashes/tree/master/argon2"
+    "repository": "https://github.com/RustCrypto/password-hashes"
   },
   {
     "name": "arrayvec",
@@ -438,6 +438,12 @@
     "repository": "https://github.com/RustCrypto/hashes"
   },
   {
+    "name": "blake2",
+    "version": "0.11.0",
+    "license": "MIT OR Apache-2.0",
+    "repository": "https://github.com/RustCrypto/hashes"
+  },
+  {
     "name": "blake3",
     "version": "1.8.7",
     "license": "CC0-1.0 OR Apache-2.0 OR Apache-2.0 WITH LLVM-exception",
@@ -493,7 +499,7 @@
   },
   {
     "name": "bumpalo",
-    "version": "3.20.3",
+    "version": "3.20.4",
     "license": "MIT OR Apache-2.0",
     "repository": "https://github.com/fitzgen/bumpalo"
   },
@@ -625,7 +631,7 @@
   },
   {
     "name": "cipher",
-    "version": "0.4.4",
+    "version": "0.5.2",
     "license": "MIT OR Apache-2.0",
     "repository": "https://github.com/RustCrypto/traits"
   },
@@ -634,6 +640,12 @@
     "version": "0.1.58",
     "license": "MIT OR Apache-2.0",
     "repository": "https://github.com/rust-lang/cmake-rs"
+  },
+  {
+    "name": "cmov",
+    "version": "0.5.4",
+    "license": "Apache-2.0 OR MIT",
+    "repository": "https://github.com/RustCrypto/utils"
   },
   {
     "name": "color_quant",
@@ -756,6 +768,12 @@
     "repository": "https://github.com/thomcc/core_detect"
   },
   {
+    "name": "cpubits",
+    "version": "0.1.1",
+    "license": "MIT OR Apache-2.0",
+    "repository": "https://github.com/RustCrypto/utils"
+  },
+  {
     "name": "cpufeatures",
     "version": "0.2.17",
     "license": "MIT OR Apache-2.0",
@@ -865,9 +883,15 @@
   },
   {
     "name": "ctr",
-    "version": "0.9.2",
+    "version": "0.10.1",
     "license": "MIT OR Apache-2.0",
     "repository": "https://github.com/RustCrypto/block-modes"
+  },
+  {
+    "name": "ctutils",
+    "version": "0.4.8",
+    "license": "Apache-2.0 OR MIT",
+    "repository": "https://github.com/RustCrypto/utils"
   },
   {
     "name": "daachorse",
@@ -1380,6 +1404,18 @@
     "repository": "https://github.com/image-rs/fdeflate"
   },
   {
+    "name": "fearless_simd",
+    "version": "1.2.0",
+    "license": "Apache-2.0 OR MIT",
+    "repository": "https://github.com/linebender/fearless_simd"
+  },
+  {
+    "name": "fearless_simd_macros",
+    "version": "0.1.0",
+    "license": "Apache-2.0 OR MIT",
+    "repository": "https://github.com/linebender/fearless_simd"
+  },
+  {
     "name": "field-offset",
     "version": "0.3.6",
     "license": "MIT OR Apache-2.0",
@@ -1603,7 +1639,7 @@
   },
   {
     "name": "ghash",
-    "version": "0.5.1",
+    "version": "0.6.0",
     "license": "Apache-2.0 OR MIT",
     "repository": "https://github.com/RustCrypto/universal-hashes"
   },
@@ -1747,13 +1783,13 @@
   },
   {
     "name": "hkdf",
-    "version": "0.12.4",
+    "version": "0.13.0",
     "license": "MIT OR Apache-2.0",
     "repository": "https://github.com/RustCrypto/KDFs/"
   },
   {
     "name": "hmac",
-    "version": "0.12.1",
+    "version": "0.13.0",
     "license": "MIT OR Apache-2.0",
     "repository": "https://github.com/RustCrypto/MACs"
   },
@@ -1969,7 +2005,7 @@
   },
   {
     "name": "inout",
-    "version": "0.1.4",
+    "version": "0.2.6",
     "license": "MIT OR Apache-2.0",
     "repository": "https://github.com/RustCrypto/utils"
   },
@@ -2281,12 +2317,6 @@
   },
   {
     "name": "lz4_flex",
-    "version": "0.11.6",
-    "license": "MIT",
-    "repository": "https://github.com/pseitz/lz4_flex"
-  },
-  {
-    "name": "lz4_flex",
     "version": "0.14.0",
     "license": "MIT",
     "repository": "https://github.com/pseitz/lz4_flex"
@@ -2389,61 +2419,61 @@
   },
   {
     "name": "mio",
-    "version": "1.2.4",
+    "version": "1.2.5",
     "license": "MIT",
     "repository": "https://github.com/tokio-rs/mio"
   },
   {
     "name": "mongreldb-client",
-    "version": "0.65.1",
+    "version": "0.66.0",
     "license": "MIT OR Apache-2.0",
     "repository": "https://github.com/visorcraft/MongrelDB"
   },
   {
     "name": "mongreldb-core",
-    "version": "0.65.1",
+    "version": "0.66.0",
     "license": "MIT OR Apache-2.0",
     "repository": "https://github.com/visorcraft/MongrelDB"
   },
   {
     "name": "mongreldb-fault",
-    "version": "0.65.1",
+    "version": "0.66.0",
     "license": "MIT OR Apache-2.0",
     "repository": "https://github.com/visorcraft/MongrelDB"
   },
   {
     "name": "mongreldb-kit",
-    "version": "0.65.1",
+    "version": "0.66.0",
     "license": "MIT OR Apache-2.0",
     "repository": "https://github.com/visorcraft/MongrelDB-Kit"
   },
   {
     "name": "mongreldb-kit-core",
-    "version": "0.65.1",
+    "version": "0.66.0",
     "license": "MIT OR Apache-2.0",
     "repository": "https://github.com/visorcraft/MongrelDB-Kit"
   },
   {
     "name": "mongreldb-log",
-    "version": "0.65.1",
+    "version": "0.66.0",
     "license": "MIT OR Apache-2.0",
     "repository": "https://github.com/visorcraft/MongrelDB"
   },
   {
     "name": "mongreldb-protocol",
-    "version": "0.65.1",
+    "version": "0.66.0",
     "license": "MIT OR Apache-2.0",
     "repository": "https://github.com/visorcraft/MongrelDB"
   },
   {
     "name": "mongreldb-query",
-    "version": "0.65.1",
+    "version": "0.66.0",
     "license": "MIT OR Apache-2.0",
     "repository": "https://github.com/visorcraft/MongrelDB"
   },
   {
     "name": "mongreldb-types",
-    "version": "0.65.1",
+    "version": "0.66.0",
     "license": "MIT OR Apache-2.0",
     "repository": "https://github.com/visorcraft/MongrelDB"
   },
@@ -2748,12 +2778,6 @@
     "repository": "https://github.com/rust-onig/rust-onig"
   },
   {
-    "name": "opaque-debug",
-    "version": "0.3.1",
-    "license": "MIT OR Apache-2.0",
-    "repository": "https://github.com/RustCrypto/utils"
-  },
-  {
     "name": "open",
     "version": "5.4.5",
     "license": "MIT",
@@ -2851,9 +2875,9 @@
   },
   {
     "name": "password-hash",
-    "version": "0.5.0",
+    "version": "0.6.1",
     "license": "MIT OR Apache-2.0",
-    "repository": "https://github.com/RustCrypto/traits/tree/master/password-hash"
+    "repository": "https://github.com/RustCrypto/traits"
   },
   {
     "name": "paste",
@@ -2890,6 +2914,12 @@
     "version": "0.8.3",
     "license": "MIT OR Apache-2.0",
     "repository": "https://github.com/petgraph/petgraph"
+  },
+  {
+    "name": "phc",
+    "version": "0.6.1",
+    "license": "Apache-2.0 OR MIT",
+    "repository": "https://github.com/RustCrypto/formats"
   },
   {
     "name": "phf",
@@ -3013,7 +3043,7 @@
   },
   {
     "name": "polyval",
-    "version": "0.6.2",
+    "version": "0.7.3",
     "license": "Apache-2.0 OR MIT",
     "repository": "https://github.com/RustCrypto/universal-hashes"
   },
@@ -3241,12 +3271,6 @@
   },
   {
     "name": "rand_core",
-    "version": "0.6.4",
-    "license": "MIT OR Apache-2.0",
-    "repository": "https://github.com/rust-random/rand"
-  },
-  {
-    "name": "rand_core",
     "version": "0.9.5",
     "license": "MIT OR Apache-2.0",
     "repository": "https://github.com/rust-random/rand"
@@ -3391,7 +3415,7 @@
   },
   {
     "name": "roaring",
-    "version": "0.10.12",
+    "version": "0.12.0",
     "license": "MIT OR Apache-2.0",
     "repository": "https://github.com/RoaringBitmap/roaring-rs"
   },
@@ -4297,7 +4321,7 @@
   },
   {
     "name": "universal-hash",
-    "version": "0.5.1",
+    "version": "0.6.1",
     "license": "MIT OR Apache-2.0",
     "repository": "https://github.com/RustCrypto/traits"
   },

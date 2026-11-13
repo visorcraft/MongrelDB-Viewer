@@ -22,8 +22,8 @@ If you have questions about license compliance, please contact
 
 ## Licenses in use
 
-- **Apache License 2.0** (564 crates)
-- **MIT License** (187 crates)
+- **Apache License 2.0** (570 crates)
+- **MIT License** (186 crates)
 - **Unicode License v3** (19 crates)
 - **BSD 3-Clause &quot;New&quot; or &quot;Revised&quot; License** (17 crates)
 - **Mozilla Public License 2.0** (7 crates)
@@ -493,6 +493,8 @@ Used by:
 ### Apache License 2.0
 
 Used by:
+- [`cmov 0.5.4`](https://github.com/RustCrypto/utils)
+- [`ctutils 0.4.8`](https://github.com/RustCrypto/utils)
 - [`embed_plist 1.2.2`](https://github.com/nvzqz/embed-plist-rs)
 - [`encode_unicode 1.0.0`](https://github.com/tormol/encode_unicode)
 - [`encoding_rs 0.8.44`](https://github.com/hsivonen/encoding_rs)
@@ -8772,7 +8774,7 @@ Used by:
 - [`bitflags 2.13.2`](https://github.com/bitflags/bitflags)
 - [`bitstream-io 4.10.0`](https://github.com/tuffy/bitstream-io)
 - [`blocking 1.7.0`](https://github.com/smol-rs/blocking)
-- [`bumpalo 3.20.3`](https://github.com/fitzgen/bumpalo)
+- [`bumpalo 3.20.4`](https://github.com/fitzgen/bumpalo)
 - [`bzip2 0.6.1`](https://github.com/trifectatechfoundation/bzip2-rs)
 - [`camino 1.2.6`](https://github.com/camino-rs/camino)
 - [`cc 1.11.2`](https://github.com/rust-lang/cc-rs)
@@ -8878,6 +8880,7 @@ Used by:
 - [`regex-syntax 0.8.11`](https://github.com/rust-lang/regex)
 - [`regex 1.13.1`](https://github.com/rust-lang/regex)
 - [`ring 0.17.14`](https://github.com/briansmith/ring)
+- [`roaring 0.12.0`](https://github.com/RoaringBitmap/roaring-rs)
 - [`rustc_version 0.4.1`](https://github.com/djc/rustc-version-rs)
 - [`rustix 1.1.6`](https://github.com/bytecodealliance/rustix)
 - [`rustls-native-certs 0.8.5`](https://github.com/rustls/rustls-native-certs)
@@ -9365,7 +9368,7 @@ limitations under the License.
 ### Apache License 2.0
 
 Used by:
-- [`hkdf 0.12.4`](https://github.com/RustCrypto/KDFs/)
+- [`hkdf 0.13.0`](https://github.com/RustCrypto/KDFs/)
 
 ```
                               Apache License
@@ -9576,35 +9579,37 @@ limitations under the License.
 ### Apache License 2.0
 
 Used by:
-- [`aes-gcm 0.10.3`](https://github.com/RustCrypto/AEADs)
-- [`aes 0.8.4`](https://github.com/RustCrypto/block-ciphers)
-- [`argon2 0.5.3`](https://github.com/RustCrypto/password-hashes/tree/master/argon2)
+- [`aes-gcm 0.11.1`](https://github.com/RustCrypto/AEADs)
+- [`aes 0.9.4`](https://github.com/RustCrypto/block-ciphers)
+- [`argon2 0.6.0`](https://github.com/RustCrypto/password-hashes)
 - [`base64ct 1.8.3`](https://github.com/RustCrypto/formats)
 - [`blake2 0.10.6`](https://github.com/RustCrypto/hashes)
+- [`blake2 0.11.0`](https://github.com/RustCrypto/hashes)
 - [`block-buffer 0.10.4`](https://github.com/RustCrypto/utils)
 - [`block-buffer 0.12.1`](https://github.com/RustCrypto/utils)
-- [`cipher 0.4.4`](https://github.com/RustCrypto/traits)
+- [`cipher 0.5.2`](https://github.com/RustCrypto/traits)
 - [`const-oid 0.10.3`](https://github.com/RustCrypto/formats)
+- [`cpubits 0.1.1`](https://github.com/RustCrypto/utils)
 - [`cpufeatures 0.2.17`](https://github.com/RustCrypto/utils)
 - [`cpufeatures 0.3.1`](https://github.com/RustCrypto/utils)
 - [`crypto-common 0.1.7`](https://github.com/RustCrypto/traits)
 - [`crypto-common 0.2.2`](https://github.com/RustCrypto/traits)
-- [`ctr 0.9.2`](https://github.com/RustCrypto/block-modes)
+- [`ctr 0.10.1`](https://github.com/RustCrypto/block-modes)
 - [`der 0.8.3`](https://github.com/RustCrypto/formats)
 - [`digest 0.10.7`](https://github.com/RustCrypto/traits)
 - [`digest 0.11.3`](https://github.com/RustCrypto/traits)
-- [`ghash 0.5.1`](https://github.com/RustCrypto/universal-hashes)
-- [`hmac 0.12.1`](https://github.com/RustCrypto/MACs)
+- [`ghash 0.6.0`](https://github.com/RustCrypto/universal-hashes)
+- [`hmac 0.13.0`](https://github.com/RustCrypto/MACs)
 - [`hybrid-array 0.4.15`](https://github.com/RustCrypto/hybrid-array)
-- [`inout 0.1.4`](https://github.com/RustCrypto/utils)
+- [`inout 0.2.6`](https://github.com/RustCrypto/utils)
 - [`md-5 0.11.0`](https://github.com/RustCrypto/hashes)
-- [`opaque-debug 0.3.1`](https://github.com/RustCrypto/utils)
-- [`password-hash 0.5.0`](https://github.com/RustCrypto/traits/tree/master/password-hash)
+- [`password-hash 0.6.1`](https://github.com/RustCrypto/traits)
 - [`pem-rfc7468 1.0.0`](https://github.com/RustCrypto/formats)
-- [`polyval 0.6.2`](https://github.com/RustCrypto/universal-hashes)
+- [`phc 0.6.1`](https://github.com/RustCrypto/formats)
+- [`polyval 0.7.3`](https://github.com/RustCrypto/universal-hashes)
 - [`sha2 0.10.9`](https://github.com/RustCrypto/hashes)
 - [`sha2 0.11.1`](https://github.com/RustCrypto/hashes)
-- [`universal-hash 0.5.1`](https://github.com/RustCrypto/traits)
+- [`universal-hash 0.6.1`](https://github.com/RustCrypto/traits)
 
 ```
                               Apache License
@@ -9816,7 +9821,7 @@ limitations under the License.
 ### Apache License 2.0
 
 Used by:
-- [`aead 0.5.2`](https://github.com/RustCrypto/traits)
+- [`aead 0.6.1`](https://github.com/RustCrypto/traits)
 
 ```
                               Apache License
@@ -10029,7 +10034,7 @@ limitations under the License.
 ### Apache License 2.0
 
 Used by:
-- [`rand_core 0.6.4`](https://github.com/rust-random/rand)
+- [`rand_core 0.10.1`](https://github.com/rust-random/rand_core)
 - [`rand_core 0.9.5`](https://github.com/rust-random/rand)
 
 ```
@@ -12818,6 +12823,8 @@ Used by:
 - [`dyn-clone 1.0.20`](https://github.com/dtolnay/dyn-clone)
 - [`erased-serde 0.4.11`](https://github.com/dtolnay/erased-serde)
 - [`fdeflate 0.3.7`](https://github.com/image-rs/fdeflate)
+- [`fearless_simd 1.2.0`](https://github.com/linebender/fearless_simd)
+- [`fearless_simd_macros 0.1.0`](https://github.com/linebender/fearless_simd)
 - [`field-offset 0.3.6`](https://github.com/Diggsey/rust-field-offset)
 - [`flatbuffers 25.12.19`](https://github.com/google/flatbuffers)
 - [`half 2.7.1`](https://github.com/VoidStarKat/half-rs)
@@ -12831,15 +12838,15 @@ Used by:
 - [`libc 0.2.191`](https://github.com/rust-lang/libc)
 - [`miniz_oxide 0.8.9`](https://github.com/Frommi/miniz_oxide/tree/master/miniz_oxide)
 - [`miniz_oxide 0.9.1`](https://github.com/Frommi/miniz_oxide/tree/master/miniz_oxide)
-- [`mongreldb-client 0.65.1`](https://github.com/visorcraft/MongrelDB)
-- [`mongreldb-core 0.65.1`](https://github.com/visorcraft/MongrelDB)
-- [`mongreldb-fault 0.65.1`](https://github.com/visorcraft/MongrelDB)
-- [`mongreldb-kit-core 0.65.1`](https://github.com/visorcraft/MongrelDB-Kit)
-- [`mongreldb-kit 0.65.1`](https://github.com/visorcraft/MongrelDB-Kit)
-- [`mongreldb-log 0.65.1`](https://github.com/visorcraft/MongrelDB)
-- [`mongreldb-protocol 0.65.1`](https://github.com/visorcraft/MongrelDB)
-- [`mongreldb-query 0.65.1`](https://github.com/visorcraft/MongrelDB)
-- [`mongreldb-types 0.65.1`](https://github.com/visorcraft/MongrelDB)
+- [`mongreldb-client 0.66.0`](https://github.com/visorcraft/MongrelDB)
+- [`mongreldb-core 0.66.0`](https://github.com/visorcraft/MongrelDB)
+- [`mongreldb-fault 0.66.0`](https://github.com/visorcraft/MongrelDB)
+- [`mongreldb-kit-core 0.66.0`](https://github.com/visorcraft/MongrelDB-Kit)
+- [`mongreldb-kit 0.66.0`](https://github.com/visorcraft/MongrelDB-Kit)
+- [`mongreldb-log 0.66.0`](https://github.com/visorcraft/MongrelDB)
+- [`mongreldb-protocol 0.66.0`](https://github.com/visorcraft/MongrelDB)
+- [`mongreldb-query 0.66.0`](https://github.com/visorcraft/MongrelDB)
+- [`mongreldb-types 0.66.0`](https://github.com/visorcraft/MongrelDB)
 - [`monostate-impl 0.1.18`](https://github.com/dtolnay/monostate)
 - [`monostate 0.1.18`](https://github.com/dtolnay/monostate)
 - [`ndk-context 0.1.1`](https://github.com/rust-windowing/android-ndk-rs)
@@ -12880,7 +12887,6 @@ Used by:
 - [`rand 0.9.5`](https://github.com/rust-random/rand)
 - [`rand_chacha 0.9.0`](https://github.com/rust-random/rand)
 - [`raw-window-handle 0.6.2`](https://github.com/rust-windowing/raw-window-handle)
-- [`roaring 0.10.12`](https://github.com/RoaringBitmap/roaring-rs)
 - [`rustc-hash 2.1.3`](https://github.com/rust-lang/rustc-hash)
 - [`rustls-platform-verifier-android 0.2.0`](https://github.com/rustls/rustls-platform-verifier)
 - [`rustversion 1.0.23`](https://github.com/dtolnay/rustversion)
@@ -14581,7 +14587,7 @@ DEALINGS IN THE SOFTWARE.
 ### MIT License
 
 Used by:
-- [`mio 1.2.4`](https://github.com/tokio-rs/mio)
+- [`mio 1.2.5`](https://github.com/tokio-rs/mio)
 
 ```
 Copyright (c) 2014 Carl Lerche and other MIO contributors
@@ -17350,7 +17356,6 @@ SOFTWARE.
 ### MIT License
 
 Used by:
-- [`lz4_flex 0.11.6`](https://github.com/pseitz/lz4_flex)
 - [`lz4_flex 0.14.0`](https://github.com/pseitz/lz4_flex)
 
 ```

@@ -334,7 +334,7 @@ impl EmbeddingHub {
 }
 
 /// Bridges [`EmbeddingHub`] into MongrelDB's process-local provider registry
-/// (0.65 semantic identity + `retrieve_text`).
+/// (0.66 semantic identity + `retrieve_text`).
 struct ViewerEmbeddingProvider {
     hub: EmbeddingHub,
     provider_id: String,
@@ -363,7 +363,7 @@ impl mongreldb_core::EmbeddingProvider for ViewerEmbeddingProvider {
         "viewer-1"
     }
     fn execution_mode(&self) -> mongreldb_core::ProviderExecutionMode {
-        // Local ONNX inference blocks; 0.65 runs Blocking providers on its pool.
+        // Local ONNX inference blocks; 0.66 runs Blocking providers on its pool.
         mongreldb_core::ProviderExecutionMode::Blocking
     }
     fn embed(

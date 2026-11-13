@@ -58,7 +58,7 @@ The manifests are authoritative. At the current source revision:
 | Desktop shell | Tauri 2 |
 | Frontend | React 19, TypeScript 7.0, Vite 8 |
 | Rust edition / minimum | 2021 / 1.95 |
-| MongrelDB train | `mongreldb-core`, `query`, `client`, and `kit` 0.65.1 |
+| MongrelDB train | `mongreldb-core`, `query`, `client`, and `kit` 0.66.0 |
 | Columnar result conversion | Arrow 59 |
 | Async runtime and HTTP | Tokio, Reqwest, Axum |
 | Local embeddings | fastembed 7, `all-MiniLM-L6-v2` |
