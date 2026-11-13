@@ -4681,7 +4681,7 @@ dependencies = [
 
 [[package]]
 name = "mongreldb-viewer"
-version = "1.6.7"
+version = "1.7.0"
 dependencies = [
  "arrow",
  "async-trait",
