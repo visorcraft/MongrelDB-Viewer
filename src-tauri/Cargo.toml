@@ -6,7 +6,7 @@ authors = ["Visorcraft"]
 edition = "2021"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/visorcraft/mongreldb-viewer"
-rust-version = "1.88"
+rust-version = "1.95"
 # Application binary (not a crates.io library). Also keeps cargo-about
 # from listing this crate under Third-party licenses when private.ignore is set.
 publish = false
@@ -25,39 +25,39 @@ tauri-plugin-dialog = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "2"
-parking_lot = "0.12"
+parking_lot = "0.13"
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "time", "io-util", "io-std", "net", "fs"] }
 tokio-util = { version = "0.7", features = ["compat"] }
 futures = "0.3"
 reqwest = { version = "0.13", default-features = false, features = ["json", "rustls", "stream", "blocking"] }
-base64 = "0.22"
+base64 = "0.23"
 chrono = { version = "0.4", default-features = false, features = ["clock", "std", "serde"] }
 uuid = { version = "1", features = ["v4", "serde"] }
-# Pinned to 58: mongreldb-query/client require arrow ^58.
-arrow = { version = "58", default-features = false, features = ["json"] }
+# Pinned to 59: mongreldb-query/client/kit require arrow ^59.
+# Arrow 60 is newer, but those crates do not accept it.
+arrow = { version = "59", default-features = false, features = ["json"] }
 tracing = "0.1"
 axum = { version = "0.8", features = ["json"] }
 tower-http = { version = "0.7", features = ["cors"] }
 bytes = "1"
 async-trait = "0.1"
 dashmap = "6"
-dirs = "6"
+dirs = "7"
 
 # Best-fitting MongrelDB stack for Tauri: embed core for direct files,
 # plus the official HTTP client for mongreldb-server multi-client access.
-# Aligned train with crates.io (0.64.16: WAL recovery record-limit fix,
-# dep/security lock updates; same public API as 0.64.14).
+# Aligned train with crates.io 0.65.1.
 # mongreldb-kit is used only to write kit_schema.json on demo create so the
 # resulting root is openable by Kit-backed clients (e.g. Mongrel desktop).
 # Runtime direct mode still uses core/query; server schema inspection uses
 # mongreldb-client's kit_schema HTTP surface.
-mongreldb-core = "0.64.16"
-mongreldb-query = "0.64.16"
-mongreldb-client = "0.64.16"
-mongreldb-kit = "0.64.16"
+mongreldb-core = "0.65.1"
+mongreldb-query = "0.65.1"
+mongreldb-client = "0.65.1"
+mongreldb-kit = "0.65.1"
 
 # Local dense embeddings (default model: all-MiniLM-L6-v2, 384 dims)
-fastembed = { version = "5", optional = true }
+fastembed = { version = "7", optional = true }
 
 [features]
 default = ["local-embeddings"]

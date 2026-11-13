@@ -56,12 +56,12 @@ The manifests are authoritative. At the current source revision:
 | Layer | Technology |
 | --- | --- |
 | Desktop shell | Tauri 2 |
-| Frontend | React 19, TypeScript 5.9, Vite 8 |
-| Rust edition / minimum | 2021 / 1.88 |
-| MongrelDB train | `mongreldb-core`, `query`, `client`, and `kit` 0.64.16 |
-| Columnar result conversion | Arrow 58 |
+| Frontend | React 19, TypeScript 7.0, Vite 8 |
+| Rust edition / minimum | 2021 / 1.95 |
+| MongrelDB train | `mongreldb-core`, `query`, `client`, and `kit` 0.65.1 |
+| Columnar result conversion | Arrow 59 |
 | Async runtime and HTTP | Tokio, Reqwest, Axum |
-| Local embeddings | fastembed 5, `all-MiniLM-L6-v2` |
+| Local embeddings | fastembed 7, `all-MiniLM-L6-v2` |
 
 All four `mongreldb-*` crates stay on the same version train. Direct and Server
 paths intentionally use the official engine/query/client APIs instead of

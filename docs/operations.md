@@ -170,7 +170,7 @@ npm run build
 cargo check --manifest-path src-tauri/Cargo.toml
 ```
 
-Required minimums are Rust 1.88 and Node.js 22. On Linux, a linker or
+Required minimums are Rust 1.95 and Node.js 22. On Linux, a linker or
 `webkit2gtk` error usually means Tauri system packages are missing. Follow the
 [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/).
 

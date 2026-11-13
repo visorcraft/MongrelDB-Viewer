@@ -334,7 +334,7 @@ impl EmbeddingHub {
 }
 
 /// Bridges [`EmbeddingHub`] into MongrelDB's process-local provider registry
-/// (0.64 semantic identity + `retrieve_text`).
+/// (0.65 semantic identity + `retrieve_text`).
 struct ViewerEmbeddingProvider {
     hub: EmbeddingHub,
     provider_id: String,
@@ -362,6 +362,10 @@ impl mongreldb_core::EmbeddingProvider for ViewerEmbeddingProvider {
     fn preprocessing_version(&self) -> &str {
         "viewer-1"
     }
+    fn execution_mode(&self) -> mongreldb_core::ProviderExecutionMode {
+        // Local ONNX inference blocks; 0.65 runs Blocking providers on its pool.
+        mongreldb_core::ProviderExecutionMode::Blocking
+    }
     fn embed(
         &self,
         request: mongreldb_core::EmbeddingRequest<'_>,
@@ -386,7 +390,7 @@ struct LocalMiniLm {
 #[cfg(feature = "local-embeddings")]
 impl LocalMiniLm {
     fn load(model_id: &str) -> AppResult<Self> {
-        use fastembed::{EmbeddingModel, InitOptions, TextEmbedding};
+        use fastembed::{EmbeddingModel, TextEmbedding, TextInitOptions};
 
         let embedding_model = match model_id {
             "all-MiniLM-L12-v2" => EmbeddingModel::AllMiniLML12V2,
@@ -401,7 +405,7 @@ impl LocalMiniLm {
         std::fs::create_dir_all(&cache).ok();
 
         let model = TextEmbedding::try_new(
-            InitOptions::new(embedding_model)
+            TextInitOptions::new(embedding_model)
                 .with_show_download_progress(true)
                 .with_cache_dir(cache),
         )

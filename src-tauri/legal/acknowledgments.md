@@ -60,10 +60,10 @@ regenerate inventories with `scripts/regen-credits.sh`).
 
 | Crate | Role | License |
 | ----- | ---- | ------- |
-| `mongreldb-core` 0.64.16 | Embedded storage engine | MIT OR Apache-2.0 |
-| `mongreldb-query` 0.64.16 | SQL / DataFusion query layer | MIT OR Apache-2.0 |
-| `mongreldb-client` 0.64.16 | HTTP client for mongreldb-server | MIT OR Apache-2.0 |
-| `mongreldb-kit` 0.64.16 | Kit schema sidecar for demo roots | MIT OR Apache-2.0 |
+| `mongreldb-core` 0.65.1 | Embedded storage engine | MIT OR Apache-2.0 |
+| `mongreldb-query` 0.65.1 | SQL / DataFusion query layer | MIT OR Apache-2.0 |
+| `mongreldb-client` 0.65.1 | HTTP client for mongreldb-server | MIT OR Apache-2.0 |
+| `mongreldb-kit` 0.65.1 | Kit schema sidecar for demo roots | MIT OR Apache-2.0 |
 | `arrow` | Columnar batches | Apache-2.0 |
 
 ### Embeddings
@@ -85,28 +85,28 @@ Direct packages from root `package.json` (versions resolved in
 
 | Package | Version | Role | License |
 | ------- | ------- | ---- | ------- |
-| `react` | 19.2.7 | UI | MIT |
-| `react-dom` | 19.2.7 | UI DOM renderer | MIT |
-| `@tauri-apps/api` | 2.11.1 | Frontend bridge | Apache-2.0 OR MIT |
-| `@tauri-apps/plugin-dialog` | 2.7.2 | Dialog plugin client | MIT OR Apache-2.0 |
-| `@tauri-apps/plugin-opener` | 2.5.4 | Opener plugin client | MIT OR Apache-2.0 |
+| `react` | 19.3.1 | UI | MIT |
+| `react-dom` | 19.3.1 | UI DOM renderer | MIT |
+| `@tauri-apps/api` | 2.12.4 | Frontend bridge | Apache-2.0 OR MIT |
+| `@tauri-apps/plugin-dialog` | 2.8.4 | Dialog plugin client | MIT OR Apache-2.0 |
+| `@tauri-apps/plugin-opener` | 2.7.3 | Opener plugin client | MIT OR Apache-2.0 |
 
 Transitive runtime package used by React:
 
 | Package | Version | Role | License |
 | ------- | ------- | ---- | ------- |
-| `scheduler` | 0.27.0 | React scheduling | MIT |
+| `scheduler` | 0.28.0 | React scheduling | MIT |
 
 ### Build tooling (devDependencies)
 
 | Package | Version | Role | License |
 | ------- | ------- | ---- | ------- |
-| `@tauri-apps/cli` | 2.11.4 | Tauri CLI | Apache-2.0 OR MIT |
-| `vite` | 8.1.5 | Bundler / dev server | MIT |
-| `@vitejs/plugin-react` | 6.0.3 | React plugin for Vite | MIT |
-| `typescript` | 5.9.3 | Type checking | Apache-2.0 |
-| `@types/react` | 19.2.17 | Type definitions | MIT |
-| `@types/react-dom` | 19.2.3 | Type definitions | MIT |
+| `@tauri-apps/cli` | 2.12.4 | Tauri CLI | Apache-2.0 OR MIT |
+| `vite` | 8.3.8 | Bundler / dev server | MIT |
+| `@vitejs/plugin-react` | 6.3.0 | React plugin for Vite | MIT |
+| `typescript` | 7.0.2 | Type checking | Apache-2.0 |
+| `@types/react` | 19.3.0 | Type definitions | MIT |
+| `@types/react-dom` | 19.3.0 | Type definitions | MIT |
 
 The complete installed npm tree (runtime + build tooling), versions, and full
 license texts are available in-app under **Licenses → Frontend (npm)** and as a

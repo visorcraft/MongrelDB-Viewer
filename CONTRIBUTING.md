@@ -57,7 +57,7 @@ chore:
 
 Requirements:
 
-- Rust 1.88+,
+- Rust 1.95+,
 - Node.js 22+,
 - Tauri 2 platform prerequisites,
 - Git,

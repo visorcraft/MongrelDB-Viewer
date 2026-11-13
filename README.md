@@ -74,7 +74,7 @@ npm ci
 npm run tauri build
 ```
 
-Source builds need Rust **1.88+**, Node.js **22+**, and the native libraries
+Source builds need Rust **1.95+**, Node.js **22+**, and the native libraries
 required by Tauri 2. Bundles are written below
 `src-tauri/target/release/bundle/`.
 
