@@ -22,21 +22,21 @@
   },
   {
     "name": "@tauri-apps/api",
-    "version": "2.12.4",
+    "version": "2.12.5",
     "license": "Apache-2.0 OR MIT",
     "repository": "https://github.com/tauri-apps/tauri",
     "role": "runtime"
   },
   {
     "name": "@tauri-apps/cli",
-    "version": "2.12.4",
+    "version": "2.12.5",
     "license": "Apache-2.0 OR MIT",
     "repository": "https://github.com/tauri-apps/tauri",
     "role": "dev"
   },
   {
     "name": "@tauri-apps/cli-linux-x64-gnu",
-    "version": "2.12.4",
+    "version": "2.12.5",
     "license": "Apache-2.0 OR MIT",
     "repository": "https://github.com/tauri-apps/tauri",
     "role": "dev"
@@ -141,7 +141,7 @@
   },
   {
     "name": "postcss",
-    "version": "8.5.32",
+    "version": "8.5.33",
     "license": "MIT",
     "repository": "postcss/postcss",
     "role": "dev"

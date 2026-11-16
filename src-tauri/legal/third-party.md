@@ -22,7 +22,7 @@ If you have questions about license compliance, please contact
 
 ## Licenses in use
 
-- **Apache License 2.0** (570 crates)
+- **Apache License 2.0** (571 crates)
 - **MIT License** (186 crates)
 - **Unicode License v3** (19 crates)
 - **BSD 3-Clause &quot;New&quot; or &quot;Revised&quot; License** (17 crates)
@@ -3618,7 +3618,7 @@ Used by:
 ### Apache License 2.0
 
 Used by:
-- [`fastembed 7.7.0`](https://github.com/Anush008/fastembed-rs)
+- [`fastembed 7.7.1`](https://github.com/Anush008/fastembed-rs)
 
 ```
                                  Apache License
@@ -12306,7 +12306,8 @@ Apache License
 ### Apache License 2.0
 
 Used by:
-- [`ctor 1.0.13`](https://github.com/mmastrac/linktime)
+- [`ctor 1.0.14`](https://github.com/mmastrac/linktime)
+- [`link-section 0.19.4`](https://github.com/mmastrac/linktime)
 
 ```
 Apache License
@@ -12838,15 +12839,15 @@ Used by:
 - [`libc 0.2.191`](https://github.com/rust-lang/libc)
 - [`miniz_oxide 0.8.9`](https://github.com/Frommi/miniz_oxide/tree/master/miniz_oxide)
 - [`miniz_oxide 0.9.1`](https://github.com/Frommi/miniz_oxide/tree/master/miniz_oxide)
-- [`mongreldb-client 0.66.0`](https://github.com/visorcraft/MongrelDB)
-- [`mongreldb-core 0.66.0`](https://github.com/visorcraft/MongrelDB)
-- [`mongreldb-fault 0.66.0`](https://github.com/visorcraft/MongrelDB)
-- [`mongreldb-kit-core 0.66.0`](https://github.com/visorcraft/MongrelDB-Kit)
-- [`mongreldb-kit 0.66.0`](https://github.com/visorcraft/MongrelDB-Kit)
-- [`mongreldb-log 0.66.0`](https://github.com/visorcraft/MongrelDB)
-- [`mongreldb-protocol 0.66.0`](https://github.com/visorcraft/MongrelDB)
-- [`mongreldb-query 0.66.0`](https://github.com/visorcraft/MongrelDB)
-- [`mongreldb-types 0.66.0`](https://github.com/visorcraft/MongrelDB)
+- [`mongreldb-client 0.66.1`](https://github.com/visorcraft/MongrelDB)
+- [`mongreldb-core 0.66.1`](https://github.com/visorcraft/MongrelDB)
+- [`mongreldb-fault 0.66.1`](https://github.com/visorcraft/MongrelDB)
+- [`mongreldb-kit-core 0.66.1`](https://github.com/visorcraft/MongrelDB-Kit)
+- [`mongreldb-kit 0.66.1`](https://github.com/visorcraft/MongrelDB-Kit)
+- [`mongreldb-log 0.66.1`](https://github.com/visorcraft/MongrelDB)
+- [`mongreldb-protocol 0.66.1`](https://github.com/visorcraft/MongrelDB)
+- [`mongreldb-query 0.66.1`](https://github.com/visorcraft/MongrelDB)
+- [`mongreldb-types 0.66.1`](https://github.com/visorcraft/MongrelDB)
 - [`monostate-impl 0.1.18`](https://github.com/dtolnay/monostate)
 - [`monostate 0.1.18`](https://github.com/dtolnay/monostate)
 - [`ndk-context 0.1.1`](https://github.com/rust-windowing/android-ndk-rs)
@@ -12906,17 +12907,17 @@ Used by:
 - [`syn 2.0.119`](https://github.com/dtolnay/syn)
 - [`syn 3.0.10`](https://github.com/dtolnay/syn)
 - [`sync_wrapper 1.0.2`](https://github.com/Actyx/sync_wrapper)
-- [`tauri-build 2.7.4`](https://github.com/tauri-apps/tauri)
-- [`tauri-codegen 2.7.4`](https://github.com/tauri-apps/tauri)
-- [`tauri-macros 2.7.4`](https://github.com/tauri-apps/tauri)
+- [`tauri-build 2.7.5`](https://github.com/tauri-apps/tauri)
+- [`tauri-codegen 2.7.5`](https://github.com/tauri-apps/tauri)
+- [`tauri-macros 2.7.5`](https://github.com/tauri-apps/tauri)
 - [`tauri-plugin-dialog 2.8.4`](https://github.com/tauri-apps/plugins-workspace)
 - [`tauri-plugin-fs 2.7.1`](https://github.com/tauri-apps/plugins-workspace)
 - [`tauri-plugin-opener 2.7.3`](https://github.com/tauri-apps/plugins-workspace)
-- [`tauri-plugin 2.7.2`](https://github.com/tauri-apps/tauri)
-- [`tauri-runtime-wry 2.12.3`](https://github.com/tauri-apps/tauri)
-- [`tauri-runtime 2.12.2`](https://github.com/tauri-apps/tauri)
-- [`tauri-utils 2.10.2`](https://github.com/tauri-apps/tauri)
-- [`tauri 2.12.5`](https://github.com/tauri-apps/tauri)
+- [`tauri-plugin 2.7.3`](https://github.com/tauri-apps/tauri)
+- [`tauri-runtime-wry 2.12.4`](https://github.com/tauri-apps/tauri)
+- [`tauri-runtime 2.12.3`](https://github.com/tauri-apps/tauri)
+- [`tauri-utils 2.10.3`](https://github.com/tauri-apps/tauri)
+- [`tauri 2.12.6`](https://github.com/tauri-apps/tauri)
 - [`thiserror-impl 1.0.69`](https://github.com/dtolnay/thiserror)
 - [`thiserror-impl 2.0.21`](https://github.com/dtolnay/thiserror)
 - [`thiserror 1.0.69`](https://github.com/dtolnay/thiserror)
@@ -13817,8 +13818,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 Used by:
 - [`alloc-no-stdlib 3.0.0`](https://github.com/dropbox/rust-alloc-no-stdlib)
-- [`brotli-decompressor 6.3.1`](https://github.com/dropbox/rust-brotli-decompressor)
-- [`brotli 9.1.1`](https://github.com/dropbox/rust-brotli)
+- [`brotli-decompressor 6.3.2`](https://github.com/dropbox/rust-brotli-decompressor)
+- [`brotli 9.1.3`](https://github.com/dropbox/rust-brotli)
 
 ```
 Copyright (c) 2016 Dropbox, Inc.
@@ -13979,7 +13980,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ### Boost Software License 1.0
 
 Used by:
-- [`xxhash-rust 0.8.19`](https://github.com/DoumanAsh/xxhash-rust)
+- [`xxhash-rust 0.8.21`](https://github.com/DoumanAsh/xxhash-rust)
 
 ```
 Boost Software License - Version 1.0 - August 17th, 2003
@@ -14521,7 +14522,7 @@ pub use prost;
 ### MIT License
 
 Used by:
-- [`brotli 9.1.1`](https://github.com/dropbox/rust-brotli)
+- [`brotli 9.1.3`](https://github.com/dropbox/rust-brotli)
 
 ```
 Copyright (c) 2009, 2010, 2013-2016 by the Brotli Authors.
@@ -17356,7 +17357,7 @@ SOFTWARE.
 ### MIT License
 
 Used by:
-- [`lz4_flex 0.14.0`](https://github.com/pseitz/lz4_flex)
+- [`lz4_flex 0.14.2`](https://github.com/pseitz/lz4_flex)
 
 ```
 The MIT License (MIT)

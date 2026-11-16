@@ -128,8 +128,8 @@ END OF TERMS AND CONDITIONS
 ### MIT License
 
 Used by:
-- [`@tauri-apps/api 2.12.4`](https://github.com/tauri-apps/tauri)
-- [`@tauri-apps/cli 2.12.4`](https://github.com/tauri-apps/tauri)
+- [`@tauri-apps/api 2.12.5`](https://github.com/tauri-apps/tauri)
+- [`@tauri-apps/cli 2.12.5`](https://github.com/tauri-apps/tauri)
 
 ```
 MIT License
@@ -2715,12 +2715,12 @@ Repository: https://github.com/rolldown/rolldown
 ### (Full license text not found in package tarball.)
 
 Used by:
-- [`@tauri-apps/cli-linux-x64-gnu 2.12.4`](https://github.com/tauri-apps/tauri)
+- [`@tauri-apps/cli-linux-x64-gnu 2.12.5`](https://github.com/tauri-apps/tauri)
 
 ```
 (Full license text not found in package tarball.)
 SPDX / declared license: Apache-2.0 OR MIT
-Package: @tauri-apps/cli-linux-x64-gnu@2.12.4
+Package: @tauri-apps/cli-linux-x64-gnu@2.12.5
 Repository: https://github.com/tauri-apps/tauri
 ```
 
@@ -3269,7 +3269,7 @@ THE SOFTWARE.
 ### The MIT License (MIT)
 
 Used by:
-- [`postcss 8.5.32`](postcss/postcss)
+- [`postcss 8.5.33`](postcss/postcss)
 
 ```
 The MIT License (MIT)

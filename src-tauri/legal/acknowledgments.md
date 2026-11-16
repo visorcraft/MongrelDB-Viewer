@@ -60,10 +60,10 @@ regenerate inventories with `scripts/regen-credits.sh`).
 
 | Crate | Role | License |
 | ----- | ---- | ------- |
-| `mongreldb-core` 0.66.0 | Embedded storage engine | MIT OR Apache-2.0 |
-| `mongreldb-query` 0.66.0 | SQL / DataFusion query layer | MIT OR Apache-2.0 |
-| `mongreldb-client` 0.66.0 | HTTP client for mongreldb-server | MIT OR Apache-2.0 |
-| `mongreldb-kit` 0.66.0 | Kit schema sidecar for demo roots | MIT OR Apache-2.0 |
+| `mongreldb-core` 0.66.1 | Embedded storage engine | MIT OR Apache-2.0 |
+| `mongreldb-query` 0.66.1 | SQL / DataFusion query layer | MIT OR Apache-2.0 |
+| `mongreldb-client` 0.66.1 | HTTP client for mongreldb-server | MIT OR Apache-2.0 |
+| `mongreldb-kit` 0.66.1 | Kit schema sidecar for demo roots | MIT OR Apache-2.0 |
 | `arrow` | Columnar batches | Apache-2.0 |
 
 ### Embeddings
@@ -87,7 +87,7 @@ Direct packages from root `package.json` (versions resolved in
 | ------- | ------- | ---- | ------- |
 | `react` | 19.3.1 | UI | MIT |
 | `react-dom` | 19.3.1 | UI DOM renderer | MIT |
-| `@tauri-apps/api` | 2.12.4 | Frontend bridge | Apache-2.0 OR MIT |
+| `@tauri-apps/api` | 2.12.5 | Frontend bridge | Apache-2.0 OR MIT |
 | `@tauri-apps/plugin-dialog` | 2.8.4 | Dialog plugin client | MIT OR Apache-2.0 |
 | `@tauri-apps/plugin-opener` | 2.7.3 | Opener plugin client | MIT OR Apache-2.0 |
 
@@ -101,7 +101,7 @@ Transitive runtime package used by React:
 
 | Package | Version | Role | License |
 | ------- | ------- | ---- | ------- |
-| `@tauri-apps/cli` | 2.12.4 | Tauri CLI | Apache-2.0 OR MIT |
+| `@tauri-apps/cli` | 2.12.5 | Tauri CLI | Apache-2.0 OR MIT |
 | `vite` | 8.3.8 | Bundler / dev server | MIT |
 | `@vitejs/plugin-react` | 6.3.0 | React plugin for Vite | MIT |
 | `typescript` | 7.0.2 | Type checking | Apache-2.0 |

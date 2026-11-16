@@ -475,13 +475,13 @@
   },
   {
     "name": "brotli",
-    "version": "9.1.1",
+    "version": "9.1.3",
     "license": "BSD-3-Clause AND MIT",
     "repository": "https://github.com/dropbox/rust-brotli"
   },
   {
     "name": "brotli-decompressor",
-    "version": "6.3.1",
+    "version": "6.3.2",
     "license": "BSD-3-Clause/MIT",
     "repository": "https://github.com/dropbox/rust-brotli-decompressor"
   },
@@ -877,7 +877,7 @@
   },
   {
     "name": "ctor",
-    "version": "1.0.13",
+    "version": "1.0.14",
     "license": "Apache-2.0 OR MIT",
     "repository": "https://github.com/mmastrac/linktime"
   },
@@ -1381,7 +1381,7 @@
   },
   {
     "name": "fastembed",
-    "version": "7.7.0",
+    "version": "7.7.1",
     "license": "Apache-2.0",
     "repository": "https://github.com/Anush008/fastembed-rs"
   },
@@ -2065,25 +2065,25 @@
   },
   {
     "name": "jiff",
-    "version": "0.2.43",
+    "version": "0.2.46",
     "license": "Unlicense OR MIT",
     "repository": "https://github.com/BurntSushi/jiff"
   },
   {
     "name": "jiff-core",
-    "version": "0.1.5",
+    "version": "0.1.8",
     "license": "Unlicense OR MIT",
     "repository": "https://github.com/BurntSushi/jiff"
   },
   {
     "name": "jiff-static",
-    "version": "0.2.43",
+    "version": "0.2.46",
     "license": "Unlicense OR MIT",
     "repository": "https://github.com/BurntSushi/jiff"
   },
   {
     "name": "jiff-tzdb",
-    "version": "0.1.9",
+    "version": "0.1.10",
     "license": "Unlicense OR MIT",
     "repository": "https://github.com/BurntSushi/jiff"
   },
@@ -2268,6 +2268,12 @@
     "repository": "https://gitlab.redox-os.org/redox-os/libredox.git"
   },
   {
+    "name": "link-section",
+    "version": "0.19.4",
+    "license": "Apache-2.0 OR MIT",
+    "repository": "https://github.com/mmastrac/linktime"
+  },
+  {
     "name": "linux-raw-sys",
     "version": "0.12.1",
     "license": "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT",
@@ -2317,7 +2323,7 @@
   },
   {
     "name": "lz4_flex",
-    "version": "0.14.0",
+    "version": "0.14.2",
     "license": "MIT",
     "repository": "https://github.com/pseitz/lz4_flex"
   },
@@ -2425,55 +2431,55 @@
   },
   {
     "name": "mongreldb-client",
-    "version": "0.66.0",
+    "version": "0.66.1",
     "license": "MIT OR Apache-2.0",
     "repository": "https://github.com/visorcraft/MongrelDB"
   },
   {
     "name": "mongreldb-core",
-    "version": "0.66.0",
+    "version": "0.66.1",
     "license": "MIT OR Apache-2.0",
     "repository": "https://github.com/visorcraft/MongrelDB"
   },
   {
     "name": "mongreldb-fault",
-    "version": "0.66.0",
+    "version": "0.66.1",
     "license": "MIT OR Apache-2.0",
     "repository": "https://github.com/visorcraft/MongrelDB"
   },
   {
     "name": "mongreldb-kit",
-    "version": "0.66.0",
+    "version": "0.66.1",
     "license": "MIT OR Apache-2.0",
     "repository": "https://github.com/visorcraft/MongrelDB-Kit"
   },
   {
     "name": "mongreldb-kit-core",
-    "version": "0.66.0",
+    "version": "0.66.1",
     "license": "MIT OR Apache-2.0",
     "repository": "https://github.com/visorcraft/MongrelDB-Kit"
   },
   {
     "name": "mongreldb-log",
-    "version": "0.66.0",
+    "version": "0.66.1",
     "license": "MIT OR Apache-2.0",
     "repository": "https://github.com/visorcraft/MongrelDB"
   },
   {
     "name": "mongreldb-protocol",
-    "version": "0.66.0",
+    "version": "0.66.1",
     "license": "MIT OR Apache-2.0",
     "repository": "https://github.com/visorcraft/MongrelDB"
   },
   {
     "name": "mongreldb-query",
-    "version": "0.66.0",
+    "version": "0.66.1",
     "license": "MIT OR Apache-2.0",
     "repository": "https://github.com/visorcraft/MongrelDB"
   },
   {
     "name": "mongreldb-types",
-    "version": "0.66.0",
+    "version": "0.66.1",
     "license": "MIT OR Apache-2.0",
     "repository": "https://github.com/visorcraft/MongrelDB"
   },
@@ -3247,7 +3253,7 @@
   },
   {
     "name": "rand",
-    "version": "0.10.3",
+    "version": "0.10.4",
     "license": "MIT OR Apache-2.0",
     "repository": "https://github.com/rust-random/rand"
   },
@@ -3925,31 +3931,31 @@
   },
   {
     "name": "tauri",
-    "version": "2.12.5",
+    "version": "2.12.6",
     "license": "Apache-2.0 OR MIT",
     "repository": "https://github.com/tauri-apps/tauri"
   },
   {
     "name": "tauri-build",
-    "version": "2.7.4",
+    "version": "2.7.5",
     "license": "Apache-2.0 OR MIT",
     "repository": "https://github.com/tauri-apps/tauri"
   },
   {
     "name": "tauri-codegen",
-    "version": "2.7.4",
+    "version": "2.7.5",
     "license": "Apache-2.0 OR MIT",
     "repository": "https://github.com/tauri-apps/tauri"
   },
   {
     "name": "tauri-macros",
-    "version": "2.7.4",
+    "version": "2.7.5",
     "license": "Apache-2.0 OR MIT",
     "repository": "https://github.com/tauri-apps/tauri"
   },
   {
     "name": "tauri-plugin",
-    "version": "2.7.2",
+    "version": "2.7.3",
     "license": "Apache-2.0 OR MIT",
     "repository": "https://github.com/tauri-apps/tauri"
   },
@@ -3973,19 +3979,19 @@
   },
   {
     "name": "tauri-runtime",
-    "version": "2.12.2",
-    "license": "Apache-2.0 OR MIT",
-    "repository": "https://github.com/tauri-apps/tauri"
-  },
-  {
-    "name": "tauri-runtime-wry",
     "version": "2.12.3",
     "license": "Apache-2.0 OR MIT",
     "repository": "https://github.com/tauri-apps/tauri"
   },
   {
+    "name": "tauri-runtime-wry",
+    "version": "2.12.4",
+    "license": "Apache-2.0 OR MIT",
+    "repository": "https://github.com/tauri-apps/tauri"
+  },
+  {
     "name": "tauri-utils",
-    "version": "2.10.2",
+    "version": "2.10.3",
     "license": "Apache-2.0 OR MIT",
     "repository": "https://github.com/tauri-apps/tauri"
   },
@@ -4831,7 +4837,7 @@
   },
   {
     "name": "xxhash-rust",
-    "version": "0.8.19",
+    "version": "0.8.21",
     "license": "BSL-1.0",
     "repository": "https://github.com/DoumanAsh/xxhash-rust"
   },
