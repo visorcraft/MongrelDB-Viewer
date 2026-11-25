@@ -115,85 +115,91 @@
   },
   {
     "name": "arrow",
-    "version": "59.3.2",
+    "version": "60.2.0",
     "license": "Apache-2.0",
     "repository": "https://github.com/apache/arrow-rs"
   },
   {
     "name": "arrow-arith",
-    "version": "59.3.2",
+    "version": "60.2.0",
     "license": "Apache-2.0",
     "repository": "https://github.com/apache/arrow-rs"
   },
   {
     "name": "arrow-array",
-    "version": "59.3.2",
+    "version": "60.2.0",
     "license": "Apache-2.0 AND MIT",
     "repository": "https://github.com/apache/arrow-rs"
   },
   {
     "name": "arrow-buffer",
-    "version": "59.3.2",
+    "version": "60.2.0",
     "license": "Apache-2.0",
     "repository": "https://github.com/apache/arrow-rs"
   },
   {
     "name": "arrow-cast",
-    "version": "59.3.2",
+    "version": "60.2.0",
+    "license": "Apache-2.0",
+    "repository": "https://github.com/apache/arrow-rs"
+  },
+  {
+    "name": "arrow-cmp",
+    "version": "60.2.0",
     "license": "Apache-2.0",
     "repository": "https://github.com/apache/arrow-rs"
   },
   {
     "name": "arrow-csv",
-    "version": "59.3.2",
+    "version": "60.2.0",
     "license": "Apache-2.0",
     "repository": "https://github.com/apache/arrow-rs"
   },
   {
     "name": "arrow-data",
-    "version": "59.3.2",
+    "version": "60.2.0",
     "license": "Apache-2.0",
     "repository": "https://github.com/apache/arrow-rs"
   },
   {
     "name": "arrow-ipc",
-    "version": "59.3.2",
+    "version": "60.2.0",
     "license": "Apache-2.0",
     "repository": "https://github.com/apache/arrow-rs"
   },
   {
     "name": "arrow-json",
-    "version": "59.3.2",
+    "version": "60.2.0",
     "license": "Apache-2.0",
     "repository": "https://github.com/apache/arrow-rs"
   },
   {
     "name": "arrow-ord",
-    "version": "59.3.2",
+    "version": "60.2.0",
     "license": "Apache-2.0",
     "repository": "https://github.com/apache/arrow-rs"
   },
   {
     "name": "arrow-row",
-    "version": "59.3.2",
+    "version": "60.2.0",
     "license": "Apache-2.0",
     "repository": "https://github.com/apache/arrow-rs"
   },
   {
     "name": "arrow-schema",
-    "version": "59.3.2",
+    "version": "60.2.0",
     "license": "Apache-2.0",
     "repository": "https://github.com/apache/arrow-rs"
   },
   {
     "name": "arrow-select",
-    "version": "59.3.2",
+    "version": "60.2.0",
     "license": "Apache-2.0",
     "repository": "https://github.com/apache/arrow-rs"
   },
   {
     "name": "arrow-string",
-    "version": "59.3.2",
+    "version": "60.2.0",
     "license": "Apache-2.0",
     "repository": "https://github.com/apache/arrow-rs"
   },
@@ -283,7 +289,7 @@
   },
   {
     "name": "atoi",
-    "version": "2.0.0",
+    "version": "3.1.1",
     "license": "MIT",
     "repository": "https://github.com/pacman82/atoi-rs"
   },
@@ -430,12 +436,6 @@
     "version": "4.10.0",
     "license": "MIT/Apache-2.0",
     "repository": "https://github.com/tuffy/bitstream-io"
-  },
-  {
-    "name": "blake2",
-    "version": "0.10.6",
-    "license": "MIT OR Apache-2.0",
-    "repository": "https://github.com/RustCrypto/hashes"
   },
   {
     "name": "blake2",
@@ -661,7 +661,7 @@
   },
   {
     "name": "comfy-table",
-    "version": "7.2.2",
+    "version": "8.0.1",
     "license": "MIT",
     "repository": "https://github.com/nukesor/comfy-table"
   },
@@ -949,181 +949,181 @@
   },
   {
     "name": "datafusion",
-    "version": "55.2.0",
+    "version": "56.0.0",
     "license": "Apache-2.0",
     "repository": "https://github.com/apache/datafusion"
   },
   {
     "name": "datafusion-catalog",
-    "version": "55.2.0",
+    "version": "56.0.0",
     "license": "Apache-2.0",
     "repository": "https://github.com/apache/datafusion"
   },
   {
     "name": "datafusion-catalog-listing",
-    "version": "55.2.0",
+    "version": "56.0.0",
     "license": "Apache-2.0",
     "repository": "https://github.com/apache/datafusion"
   },
   {
     "name": "datafusion-common",
-    "version": "55.2.0",
+    "version": "56.0.0",
     "license": "Apache-2.0",
     "repository": "https://github.com/apache/datafusion"
   },
   {
     "name": "datafusion-common-runtime",
-    "version": "55.2.0",
+    "version": "56.0.0",
     "license": "Apache-2.0",
     "repository": "https://github.com/apache/datafusion"
   },
   {
     "name": "datafusion-datasource",
-    "version": "55.2.0",
+    "version": "56.0.0",
     "license": "Apache-2.0",
     "repository": "https://github.com/apache/datafusion"
   },
   {
     "name": "datafusion-datasource-arrow",
-    "version": "55.2.0",
+    "version": "56.0.0",
     "license": "Apache-2.0",
     "repository": "https://github.com/apache/datafusion"
   },
   {
     "name": "datafusion-datasource-csv",
-    "version": "55.2.0",
+    "version": "56.0.0",
     "license": "Apache-2.0",
     "repository": "https://github.com/apache/datafusion"
   },
   {
     "name": "datafusion-datasource-json",
-    "version": "55.2.0",
+    "version": "56.0.0",
     "license": "Apache-2.0",
     "repository": "https://github.com/apache/datafusion"
   },
   {
     "name": "datafusion-doc",
-    "version": "55.2.0",
+    "version": "56.0.0",
     "license": "Apache-2.0",
     "repository": "https://github.com/apache/datafusion"
   },
   {
     "name": "datafusion-execution",
-    "version": "55.2.0",
+    "version": "56.0.0",
     "license": "Apache-2.0",
     "repository": "https://github.com/apache/datafusion"
   },
   {
     "name": "datafusion-expr",
-    "version": "55.2.0",
+    "version": "56.0.0",
     "license": "Apache-2.0",
     "repository": "https://github.com/apache/datafusion"
   },
   {
     "name": "datafusion-expr-common",
-    "version": "55.2.0",
+    "version": "56.0.0",
     "license": "Apache-2.0",
     "repository": "https://github.com/apache/datafusion"
   },
   {
     "name": "datafusion-functions",
-    "version": "55.2.0",
+    "version": "56.0.0",
     "license": "Apache-2.0",
     "repository": "https://github.com/apache/datafusion"
   },
   {
     "name": "datafusion-functions-aggregate",
-    "version": "55.2.0",
+    "version": "56.0.0",
     "license": "Apache-2.0",
     "repository": "https://github.com/apache/datafusion"
   },
   {
     "name": "datafusion-functions-aggregate-common",
-    "version": "55.2.0",
+    "version": "56.0.0",
     "license": "Apache-2.0",
     "repository": "https://github.com/apache/datafusion"
   },
   {
     "name": "datafusion-functions-nested",
-    "version": "55.2.0",
+    "version": "56.0.0",
     "license": "Apache-2.0",
     "repository": "https://github.com/apache/datafusion"
   },
   {
     "name": "datafusion-functions-table",
-    "version": "55.2.0",
+    "version": "56.0.0",
     "license": "Apache-2.0",
     "repository": "https://github.com/apache/datafusion"
   },
   {
     "name": "datafusion-functions-window",
-    "version": "55.2.0",
+    "version": "56.0.0",
     "license": "Apache-2.0",
     "repository": "https://github.com/apache/datafusion"
   },
   {
     "name": "datafusion-functions-window-common",
-    "version": "55.2.0",
+    "version": "56.0.0",
     "license": "Apache-2.0",
     "repository": "https://github.com/apache/datafusion"
   },
   {
     "name": "datafusion-macros",
-    "version": "55.2.0",
+    "version": "56.0.0",
     "license": "Apache-2.0",
     "repository": "https://github.com/apache/datafusion"
   },
   {
     "name": "datafusion-optimizer",
-    "version": "55.2.0",
+    "version": "56.0.0",
     "license": "Apache-2.0",
     "repository": "https://github.com/apache/datafusion"
   },
   {
     "name": "datafusion-physical-expr",
-    "version": "55.2.0",
+    "version": "56.0.0",
     "license": "Apache-2.0",
     "repository": "https://github.com/apache/datafusion"
   },
   {
     "name": "datafusion-physical-expr-adapter",
-    "version": "55.2.0",
+    "version": "56.0.0",
     "license": "Apache-2.0",
     "repository": "https://github.com/apache/datafusion"
   },
   {
     "name": "datafusion-physical-expr-common",
-    "version": "55.2.0",
+    "version": "56.0.0",
     "license": "Apache-2.0",
     "repository": "https://github.com/apache/datafusion"
   },
   {
     "name": "datafusion-physical-optimizer",
-    "version": "55.2.0",
+    "version": "56.0.0",
     "license": "Apache-2.0",
     "repository": "https://github.com/apache/datafusion"
   },
   {
     "name": "datafusion-physical-plan",
-    "version": "55.2.0",
+    "version": "56.0.0",
     "license": "Apache-2.0",
     "repository": "https://github.com/apache/datafusion"
   },
   {
     "name": "datafusion-pruning",
-    "version": "55.2.0",
+    "version": "56.0.0",
     "license": "Apache-2.0",
     "repository": "https://github.com/apache/datafusion"
   },
   {
     "name": "datafusion-session",
-    "version": "55.2.0",
+    "version": "56.0.0",
     "license": "Apache-2.0",
     "repository": "https://github.com/apache/datafusion"
   },
   {
     "name": "datafusion-sql",
-    "version": "55.2.0",
+    "version": "56.0.0",
     "license": "Apache-2.0",
     "repository": "https://github.com/apache/datafusion"
   },
@@ -2431,55 +2431,55 @@
   },
   {
     "name": "mongreldb-client",
-    "version": "0.67.0",
+    "version": "0.67.1",
     "license": "MIT OR Apache-2.0",
     "repository": "https://github.com/visorcraft/MongrelDB"
   },
   {
     "name": "mongreldb-core",
-    "version": "0.67.0",
+    "version": "0.67.1",
     "license": "MIT OR Apache-2.0",
     "repository": "https://github.com/visorcraft/MongrelDB"
   },
   {
     "name": "mongreldb-fault",
-    "version": "0.67.0",
+    "version": "0.67.1",
     "license": "MIT OR Apache-2.0",
     "repository": "https://github.com/visorcraft/MongrelDB"
   },
   {
     "name": "mongreldb-kit",
-    "version": "0.67.0",
+    "version": "0.67.1",
     "license": "MIT OR Apache-2.0",
     "repository": "https://github.com/visorcraft/MongrelDB-Kit"
   },
   {
     "name": "mongreldb-kit-core",
-    "version": "0.67.0",
+    "version": "0.67.1",
     "license": "MIT OR Apache-2.0",
     "repository": "https://github.com/visorcraft/MongrelDB-Kit"
   },
   {
     "name": "mongreldb-log",
-    "version": "0.67.0",
+    "version": "0.67.1",
     "license": "MIT OR Apache-2.0",
     "repository": "https://github.com/visorcraft/MongrelDB"
   },
   {
     "name": "mongreldb-protocol",
-    "version": "0.67.0",
+    "version": "0.67.1",
     "license": "MIT OR Apache-2.0",
     "repository": "https://github.com/visorcraft/MongrelDB"
   },
   {
     "name": "mongreldb-query",
-    "version": "0.67.0",
+    "version": "0.67.1",
     "license": "MIT OR Apache-2.0",
     "repository": "https://github.com/visorcraft/MongrelDB"
   },
   {
     "name": "mongreldb-types",
-    "version": "0.67.0",
+    "version": "0.67.1",
     "license": "MIT OR Apache-2.0",
     "repository": "https://github.com/visorcraft/MongrelDB"
   },
@@ -2566,6 +2566,12 @@
     "version": "1.0.6",
     "license": "MIT",
     "repository": "https://github.com/mbrubeck/rust-debug-unreachable"
+  },
+  {
+    "name": "nix",
+    "version": "0.31.4",
+    "license": "MIT",
+    "repository": "https://github.com/nix-rust/nix"
   },
   {
     "name": "no_std_io2",
@@ -2761,7 +2767,7 @@
   },
   {
     "name": "object_store",
-    "version": "0.13.2",
+    "version": "0.14.2",
     "license": "MIT/Apache-2.0",
     "repository": "https://github.com/apache/arrow-rs-object-store"
   },
@@ -3781,13 +3787,13 @@
   },
   {
     "name": "sqlparser",
-    "version": "0.62.0",
+    "version": "0.63.0",
     "license": "Apache-2.0",
     "repository": "https://github.com/apache/datafusion-sqlparser-rs"
   },
   {
     "name": "sqlparser_derive",
-    "version": "0.5.0",
+    "version": "0.6.0",
     "license": "Apache-2.0",
     "repository": "https://github.com/sqlparser-rs/sqlparser-rs"
   },
@@ -4945,19 +4951,7 @@
   },
   {
     "name": "zstd",
-    "version": "0.13.5",
-    "license": "BSD-3-Clause",
-    "repository": "https://github.com/gyscos/zstd-rs"
-  },
-  {
-    "name": "zstd",
     "version": "0.14.4",
-    "license": "BSD-3-Clause",
-    "repository": "https://github.com/gyscos/zstd-rs"
-  },
-  {
-    "name": "zstd-safe",
-    "version": "7.4.1",
     "license": "BSD-3-Clause",
     "repository": "https://github.com/gyscos/zstd-rs"
   },

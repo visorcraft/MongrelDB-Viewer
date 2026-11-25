@@ -1,6 +1,6 @@
 [package]
 name = "mongreldb-viewer"
-version = "1.9.0"
+version = "1.10.0"
 description = "MongrelDB Viewer - Signal Deck for AI-native columnar databases"
 authors = ["Visorcraft"]
 edition = "2021"
@@ -33,9 +33,8 @@ reqwest = { version = "0.13", default-features = false, features = ["json", "rus
 base64 = "0.23"
 chrono = { version = "0.4", default-features = false, features = ["clock", "std", "serde"] }
 uuid = { version = "1", features = ["v4", "serde"] }
-# Pinned to 59: mongreldb-query/client/kit require arrow ^59.
-# Arrow 60 is newer, but those crates do not accept it.
-arrow = { version = "59", default-features = false, features = ["json"] }
+# Aligned with MongrelDB DataFusion 56 / Arrow 60 train.
+arrow = { version = "60", default-features = false, features = ["json"] }
 tracing = "0.1"
 axum = { version = "0.8", features = ["json"] }
 tower-http = { version = "0.7", features = ["cors"] }
@@ -46,15 +45,15 @@ dirs = "7"
 
 # Best-fitting MongrelDB stack for Tauri: embed core for direct files,
 # plus the official HTTP client for mongreldb-server multi-client access.
-# Aligned train with crates.io 0.67.0.
+# Aligned train with crates.io 0.67.1.
 # mongreldb-kit is used only to write kit_schema.json on demo create so the
 # resulting root is openable by Kit-backed clients (e.g. Mongrel desktop).
 # Runtime direct mode still uses core/query; server schema inspection uses
 # mongreldb-client's kit_schema HTTP surface.
-mongreldb-core = "0.67.0"
-mongreldb-query = "0.67.0"
-mongreldb-client = "0.67.0"
-mongreldb-kit = "0.67.0"
+mongreldb-core = "0.67.1"
+mongreldb-query = "0.67.1"
+mongreldb-client = "0.67.1"
+mongreldb-kit = "0.67.1"
 
 # Local dense embeddings (default model: all-MiniLM-L6-v2, 384 dims)
 fastembed = { version = "7", optional = true }

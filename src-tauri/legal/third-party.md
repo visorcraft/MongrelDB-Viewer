@@ -23,9 +23,9 @@ If you have questions about license compliance, please contact
 ## Licenses in use
 
 - **Apache License 2.0** (571 crates)
-- **MIT License** (186 crates)
+- **MIT License** (188 crates)
 - **Unicode License v3** (19 crates)
-- **BSD 3-Clause &quot;New&quot; or &quot;Revised&quot; License** (17 crates)
+- **BSD 3-Clause &quot;New&quot; or &quot;Revised&quot; License** (15 crates)
 - **Mozilla Public License 2.0** (7 crates)
 - **ISC License** (6 crates)
 - **BSD 2-Clause &quot;Simplified&quot; License** (4 crates)
@@ -937,7 +937,7 @@ Used by:
 ### Apache License 2.0
 
 Used by:
-- [`object_store 0.13.2`](https://github.com/apache/arrow-rs-object-store)
+- [`object_store 0.14.2`](https://github.com/apache/arrow-rs-object-store)
 
 ```
 
@@ -1383,36 +1383,36 @@ Software.
 ### Apache License 2.0
 
 Used by:
-- [`datafusion-catalog-listing 55.2.0`](https://github.com/apache/datafusion)
-- [`datafusion-catalog 55.2.0`](https://github.com/apache/datafusion)
-- [`datafusion-common-runtime 55.2.0`](https://github.com/apache/datafusion)
-- [`datafusion-common 55.2.0`](https://github.com/apache/datafusion)
-- [`datafusion-datasource-arrow 55.2.0`](https://github.com/apache/datafusion)
-- [`datafusion-datasource-csv 55.2.0`](https://github.com/apache/datafusion)
-- [`datafusion-datasource-json 55.2.0`](https://github.com/apache/datafusion)
-- [`datafusion-datasource 55.2.0`](https://github.com/apache/datafusion)
-- [`datafusion-doc 55.2.0`](https://github.com/apache/datafusion)
-- [`datafusion-execution 55.2.0`](https://github.com/apache/datafusion)
-- [`datafusion-expr-common 55.2.0`](https://github.com/apache/datafusion)
-- [`datafusion-expr 55.2.0`](https://github.com/apache/datafusion)
-- [`datafusion-functions-aggregate-common 55.2.0`](https://github.com/apache/datafusion)
-- [`datafusion-functions-aggregate 55.2.0`](https://github.com/apache/datafusion)
-- [`datafusion-functions-nested 55.2.0`](https://github.com/apache/datafusion)
-- [`datafusion-functions-table 55.2.0`](https://github.com/apache/datafusion)
-- [`datafusion-functions-window-common 55.2.0`](https://github.com/apache/datafusion)
-- [`datafusion-functions-window 55.2.0`](https://github.com/apache/datafusion)
-- [`datafusion-functions 55.2.0`](https://github.com/apache/datafusion)
-- [`datafusion-macros 55.2.0`](https://github.com/apache/datafusion)
-- [`datafusion-optimizer 55.2.0`](https://github.com/apache/datafusion)
-- [`datafusion-physical-expr-adapter 55.2.0`](https://github.com/apache/datafusion)
-- [`datafusion-physical-expr-common 55.2.0`](https://github.com/apache/datafusion)
-- [`datafusion-physical-expr 55.2.0`](https://github.com/apache/datafusion)
-- [`datafusion-physical-optimizer 55.2.0`](https://github.com/apache/datafusion)
-- [`datafusion-physical-plan 55.2.0`](https://github.com/apache/datafusion)
-- [`datafusion-pruning 55.2.0`](https://github.com/apache/datafusion)
-- [`datafusion-session 55.2.0`](https://github.com/apache/datafusion)
-- [`datafusion-sql 55.2.0`](https://github.com/apache/datafusion)
-- [`datafusion 55.2.0`](https://github.com/apache/datafusion)
+- [`datafusion-catalog-listing 56.0.0`](https://github.com/apache/datafusion)
+- [`datafusion-catalog 56.0.0`](https://github.com/apache/datafusion)
+- [`datafusion-common-runtime 56.0.0`](https://github.com/apache/datafusion)
+- [`datafusion-common 56.0.0`](https://github.com/apache/datafusion)
+- [`datafusion-datasource-arrow 56.0.0`](https://github.com/apache/datafusion)
+- [`datafusion-datasource-csv 56.0.0`](https://github.com/apache/datafusion)
+- [`datafusion-datasource-json 56.0.0`](https://github.com/apache/datafusion)
+- [`datafusion-datasource 56.0.0`](https://github.com/apache/datafusion)
+- [`datafusion-doc 56.0.0`](https://github.com/apache/datafusion)
+- [`datafusion-execution 56.0.0`](https://github.com/apache/datafusion)
+- [`datafusion-expr-common 56.0.0`](https://github.com/apache/datafusion)
+- [`datafusion-expr 56.0.0`](https://github.com/apache/datafusion)
+- [`datafusion-functions-aggregate-common 56.0.0`](https://github.com/apache/datafusion)
+- [`datafusion-functions-aggregate 56.0.0`](https://github.com/apache/datafusion)
+- [`datafusion-functions-nested 56.0.0`](https://github.com/apache/datafusion)
+- [`datafusion-functions-table 56.0.0`](https://github.com/apache/datafusion)
+- [`datafusion-functions-window-common 56.0.0`](https://github.com/apache/datafusion)
+- [`datafusion-functions-window 56.0.0`](https://github.com/apache/datafusion)
+- [`datafusion-functions 56.0.0`](https://github.com/apache/datafusion)
+- [`datafusion-macros 56.0.0`](https://github.com/apache/datafusion)
+- [`datafusion-optimizer 56.0.0`](https://github.com/apache/datafusion)
+- [`datafusion-physical-expr-adapter 56.0.0`](https://github.com/apache/datafusion)
+- [`datafusion-physical-expr-common 56.0.0`](https://github.com/apache/datafusion)
+- [`datafusion-physical-expr 56.0.0`](https://github.com/apache/datafusion)
+- [`datafusion-physical-optimizer 56.0.0`](https://github.com/apache/datafusion)
+- [`datafusion-physical-plan 56.0.0`](https://github.com/apache/datafusion)
+- [`datafusion-pruning 56.0.0`](https://github.com/apache/datafusion)
+- [`datafusion-session 56.0.0`](https://github.com/apache/datafusion)
+- [`datafusion-sql 56.0.0`](https://github.com/apache/datafusion)
+- [`datafusion 56.0.0`](https://github.com/apache/datafusion)
 
 ```
 
@@ -1635,20 +1635,21 @@ License: http://www.apache.org/licenses/LICENSE-2.0
 ### Apache License 2.0
 
 Used by:
-- [`arrow-arith 59.3.2`](https://github.com/apache/arrow-rs)
-- [`arrow-array 59.3.2`](https://github.com/apache/arrow-rs)
-- [`arrow-buffer 59.3.2`](https://github.com/apache/arrow-rs)
-- [`arrow-cast 59.3.2`](https://github.com/apache/arrow-rs)
-- [`arrow-csv 59.3.2`](https://github.com/apache/arrow-rs)
-- [`arrow-data 59.3.2`](https://github.com/apache/arrow-rs)
-- [`arrow-ipc 59.3.2`](https://github.com/apache/arrow-rs)
-- [`arrow-json 59.3.2`](https://github.com/apache/arrow-rs)
-- [`arrow-ord 59.3.2`](https://github.com/apache/arrow-rs)
-- [`arrow-row 59.3.2`](https://github.com/apache/arrow-rs)
-- [`arrow-schema 59.3.2`](https://github.com/apache/arrow-rs)
-- [`arrow-select 59.3.2`](https://github.com/apache/arrow-rs)
-- [`arrow-string 59.3.2`](https://github.com/apache/arrow-rs)
-- [`arrow 59.3.2`](https://github.com/apache/arrow-rs)
+- [`arrow-arith 60.2.0`](https://github.com/apache/arrow-rs)
+- [`arrow-array 60.2.0`](https://github.com/apache/arrow-rs)
+- [`arrow-buffer 60.2.0`](https://github.com/apache/arrow-rs)
+- [`arrow-cast 60.2.0`](https://github.com/apache/arrow-rs)
+- [`arrow-cmp 60.2.0`](https://github.com/apache/arrow-rs)
+- [`arrow-csv 60.2.0`](https://github.com/apache/arrow-rs)
+- [`arrow-data 60.2.0`](https://github.com/apache/arrow-rs)
+- [`arrow-ipc 60.2.0`](https://github.com/apache/arrow-rs)
+- [`arrow-json 60.2.0`](https://github.com/apache/arrow-rs)
+- [`arrow-ord 60.2.0`](https://github.com/apache/arrow-rs)
+- [`arrow-row 60.2.0`](https://github.com/apache/arrow-rs)
+- [`arrow-schema 60.2.0`](https://github.com/apache/arrow-rs)
+- [`arrow-select 60.2.0`](https://github.com/apache/arrow-rs)
+- [`arrow-string 60.2.0`](https://github.com/apache/arrow-rs)
+- [`arrow 60.2.0`](https://github.com/apache/arrow-rs)
 
 ```
 
@@ -8897,8 +8898,8 @@ Used by:
 - [`simd_cesu8 1.2.0`](https://github.com/seancroach/simd_cesu8)
 - [`smallvec 1.16.5`](https://github.com/servo/rust-smallvec)
 - [`socket2 0.6.5`](https://github.com/rust-lang/socket2)
-- [`sqlparser 0.62.0`](https://github.com/apache/datafusion-sqlparser-rs)
-- [`sqlparser_derive 0.5.0`](https://github.com/sqlparser-rs/sqlparser-rs)
+- [`sqlparser 0.63.0`](https://github.com/apache/datafusion-sqlparser-rs)
+- [`sqlparser_derive 0.6.0`](https://github.com/sqlparser-rs/sqlparser-rs)
 - [`stable_deref_trait 1.2.1`](https://github.com/storyyeller/stable_deref_trait)
 - [`stacker 0.1.25`](https://github.com/rust-lang/stacker)
 - [`string_cache 0.11.0`](https://github.com/servo/string-cache)
@@ -9583,7 +9584,6 @@ Used by:
 - [`aes 0.9.4`](https://github.com/RustCrypto/block-ciphers)
 - [`argon2 0.6.0`](https://github.com/RustCrypto/password-hashes)
 - [`base64ct 1.8.3`](https://github.com/RustCrypto/formats)
-- [`blake2 0.10.6`](https://github.com/RustCrypto/hashes)
 - [`blake2 0.11.0`](https://github.com/RustCrypto/hashes)
 - [`block-buffer 0.10.4`](https://github.com/RustCrypto/utils)
 - [`block-buffer 0.12.1`](https://github.com/RustCrypto/utils)
@@ -12839,15 +12839,15 @@ Used by:
 - [`libc 0.2.191`](https://github.com/rust-lang/libc)
 - [`miniz_oxide 0.8.9`](https://github.com/Frommi/miniz_oxide/tree/master/miniz_oxide)
 - [`miniz_oxide 0.9.1`](https://github.com/Frommi/miniz_oxide/tree/master/miniz_oxide)
-- [`mongreldb-client 0.67.0`](https://github.com/visorcraft/MongrelDB)
-- [`mongreldb-core 0.67.0`](https://github.com/visorcraft/MongrelDB)
-- [`mongreldb-fault 0.67.0`](https://github.com/visorcraft/MongrelDB)
-- [`mongreldb-kit-core 0.67.0`](https://github.com/visorcraft/MongrelDB-Kit)
-- [`mongreldb-kit 0.67.0`](https://github.com/visorcraft/MongrelDB-Kit)
-- [`mongreldb-log 0.67.0`](https://github.com/visorcraft/MongrelDB)
-- [`mongreldb-protocol 0.67.0`](https://github.com/visorcraft/MongrelDB)
-- [`mongreldb-query 0.67.0`](https://github.com/visorcraft/MongrelDB)
-- [`mongreldb-types 0.67.0`](https://github.com/visorcraft/MongrelDB)
+- [`mongreldb-client 0.67.1`](https://github.com/visorcraft/MongrelDB)
+- [`mongreldb-core 0.67.1`](https://github.com/visorcraft/MongrelDB)
+- [`mongreldb-fault 0.67.1`](https://github.com/visorcraft/MongrelDB)
+- [`mongreldb-kit-core 0.67.1`](https://github.com/visorcraft/MongrelDB-Kit)
+- [`mongreldb-kit 0.67.1`](https://github.com/visorcraft/MongrelDB-Kit)
+- [`mongreldb-log 0.67.1`](https://github.com/visorcraft/MongrelDB)
+- [`mongreldb-protocol 0.67.1`](https://github.com/visorcraft/MongrelDB)
+- [`mongreldb-query 0.67.1`](https://github.com/visorcraft/MongrelDB)
+- [`mongreldb-types 0.67.1`](https://github.com/visorcraft/MongrelDB)
 - [`monostate-impl 0.1.18`](https://github.com/dtolnay/monostate)
 - [`monostate 0.1.18`](https://github.com/dtolnay/monostate)
 - [`ndk-context 0.1.1`](https://github.com/rust-windowing/android-ndk-rs)
@@ -13774,10 +13774,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ### BSD 3-Clause &quot;New&quot; or &quot;Revised&quot; License
 
 Used by:
-- [`zstd-safe 7.4.1`](https://github.com/gyscos/zstd-rs)
 - [`zstd-safe 8.3.0`](https://github.com/gyscos/zstd-rs)
 - [`zstd-sys 2.1.3+zstd.1.5.7`](https://github.com/gyscos/zstd-rs)
-- [`zstd 0.13.5`](https://github.com/gyscos/zstd-rs)
 - [`zstd 0.14.4`](https://github.com/gyscos/zstd-rs)
 
 ```
@@ -15507,7 +15505,7 @@ THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 ### MIT License
 
 Used by:
-- [`atoi 2.0.0`](https://github.com/pacman82/atoi-rs)
+- [`atoi 3.1.1`](https://github.com/pacman82/atoi-rs)
 
 ```
 MIT License
@@ -15833,7 +15831,7 @@ SOFTWARE.
 ### MIT License
 
 Used by:
-- [`comfy-table 7.2.2`](https://github.com/nukesor/comfy-table)
+- [`comfy-table 8.0.1`](https://github.com/nukesor/comfy-table)
 
 ```
 MIT License
@@ -16096,7 +16094,27 @@ DEALINGS IN THE SOFTWARE.
 ### MIT License
 
 Used by:
-- [`arrow-array 59.3.2`](https://github.com/apache/arrow-rs)
+- [`cfg_aliases 0.2.2`](https://github.com/katharostech/cfg_aliases)
+
+```
+MIT License
+
+Copyright (c) 2020 Katharos Technology
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the &quot;Software&quot;), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+```
+
+---
+
+### MIT License
+
+Used by:
+- [`arrow-array 60.2.0`](https://github.com/apache/arrow-rs)
 
 ```
 MIT License
@@ -16901,6 +16919,38 @@ Used by:
 The MIT License (MIT)
 
 Copyright (c) 2015 Andrew Gallant
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the &quot;Software&quot;), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+```
+
+---
+
+### MIT License
+
+Used by:
+- [`nix 0.31.4`](https://github.com/nix-rust/nix)
+
+```
+The MIT License (MIT)
+
+Copyright (c) 2015 Carl Lerche + nix-rust Authors
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the &quot;Software&quot;), to deal
